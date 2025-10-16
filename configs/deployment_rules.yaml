@@ -1,0 +1,207 @@
+# Deployment Decision Rules
+# These rules provide fast, heuristic-based decisions for common patterns
+# If no rule matches, the system falls back to LLM-based decision
+
+version: "1.0"
+
+rules:
+  # Rule 1: Multi-service applications → Kubernetes
+  - name: multi_service_compose
+    priority: 100
+    description: Applications with docker-compose indicate multi-service architecture
+    conditions:
+      has_docker_compose: true
+    recommendation: kubernetes
+    instance_type: null
+    reason: Multi-service architecture detected via docker-compose.yml - requires orchestration
+
+  # Rule 2: Containerized microservices → Kubernetes
+  - name: containerized_complex
+    priority: 90
+    description: Containerized apps with many dependencies need orchestration
+    conditions:
+      has_dockerfile: true
+      min_dependencies: 20
+    recommendation: kubernetes
+    instance_type: null
+    reason: High dependency count with containerization indicates complex microservices
+
+  # Rule 3: Simple stateless API → Serverless
+  - name: simple_stateless_api
+    priority: 80
+    description: Lightweight stateless APIs are perfect for Lambda
+    conditions:
+      framework: [fastapi, express]
+      max_dependencies: 5
+      has_dockerfile: false
+      has_docker_compose: false
+    recommendation: serverless
+    instance_type: null
+    reason: Lightweight stateless API with minimal dependencies - cost-effective serverless deployment
+
+  # Rule 4: Go microservice → Kubernetes or Serverless
+  - name: go_microservice
+    priority: 75
+    description: Go services are lightweight and fast
+    conditions:
+      language: go
+      has_dockerfile: true
+    recommendation: kubernetes
+    instance_type: null
+    reason: Containerized Go microservice - excellent Kubernetes candidate
+
+  # Rule 5: Django application → VM
+  - name: django_web_app
+    priority: 70
+    description: Django apps typically need traditional deployment
+    conditions:
+      framework: django
+      has_dockerfile: false
+    recommendation: vm
+    instance_type: t3.small
+    reason: Traditional Django web application with database and static files
+
+  # Rule 6: Rails application → VM
+  - name: rails_web_app
+    priority: 70
+    description: Rails apps need traditional deployment
+    conditions:
+      framework: rails
+    recommendation: vm
+    instance_type: t3.small
+    reason: Traditional Rails application with asset pipeline and database
+
+  # Rule 7: Simple Flask/Express → VM
+  - name: simple_web_app
+    priority: 60
+    description: Simple web apps without containerization
+    conditions:
+      framework: [flask, express]
+      max_dependencies: 15
+      has_dockerfile: false
+      has_docker_compose: false
+    recommendation: vm
+    instance_type: t3.micro
+    reason: Simple web application suitable for straightforward VM deployment
+
+  # Rule 8: Next.js application → VM
+  - name: nextjs_app
+    priority: 60
+    description: Next.js SSR applications
+    conditions:
+      framework: nextjs
+    recommendation: vm
+    instance_type: t3.small
+    reason: Next.js SSR application with moderate resource requirements
+
+  # Rule 9: Containerized simple app → VM
+  - name: containerized_simple
+    priority: 50
+    description: Containerized but simple single-service apps
+    conditions:
+      has_dockerfile: true
+      max_dependencies: 10
+      has_docker_compose: false
+    recommendation: vm
+    instance_type: t3.micro
+    reason: Containerized single-service application - VM provides simple deployment
+
+  # Rule 10: High complexity → Kubernetes
+  - name: high_complexity
+    priority: 40
+    description: Very complex applications need orchestration
+    conditions:
+      min_dependencies: 30
+    recommendation: kubernetes
+    instance_type: null
+    reason: High complexity (30+ dependencies) requires container orchestration
+
+  # Default fallback (lowest priority)
+  - name: default_vm
+    priority: 0
+    description: Safe default for unknown patterns
+    conditions: {}
+    recommendation: vm
+    instance_type: t3.micro
+    reason: Default safe choice for web applications
+
+# Instance type mappings for VM deployments
+instance_types:
+  t3.micro:
+    vcpu: 2
+    memory_gb: 1
+    cost_per_hour: 0.0104
+    use_cases:
+      - Simple web apps
+      - Low traffic APIs
+      - Development environments
+
+  t3.small:
+    vcpu: 2
+    memory_gb: 2
+    cost_per_hour: 0.0208
+    use_cases:
+      - Django/Rails apps
+      - Medium traffic
+      - Production single-service apps
+
+  t3.medium:
+    vcpu: 2
+    memory_gb: 4
+    cost_per_hour: 0.0416
+    use_cases:
+      - High traffic applications
+      - Memory-intensive workloads
+      - Multiple workers
+
+# Framework-specific optimizations
+optimizations:
+  flask:
+    production_server: gunicorn
+    workers: 4
+    recommended_ports: [5000, 8000]
+    additional_packages:
+      - gunicorn
+
+  django:
+    production_server: "gunicorn + nginx"
+    workers: 4
+    recommended_ports: [8000]
+    additional_packages:
+      - gunicorn
+      - whitenoise
+    notes:
+      - Configure static files collection
+      - Run migrations before deployment
+      - Use environment variables for SECRET_KEY
+
+  fastapi:
+    production_server: uvicorn
+    workers: 4
+    recommended_ports: [8000]
+    additional_packages:
+      - uvicorn[standard]
+
+  express:
+    production_server: pm2
+    workers: auto
+    recommended_ports: [3000]
+    additional_packages:
+      - pm2
+    notes:
+      - Use cluster mode for multi-core
+      - Configure environment via PM2 ecosystem file
+
+  nextjs:
+    production_server: "next start"
+    recommended_ports: [3000]
+    notes:
+      - Run next build before deployment
+      - Set NODE_ENV=production
+
+  go:
+    production_server: direct_binary
+    recommended_ports: [8080]
+    notes:
+      - Compile with CGO_ENABLED=0 for static binary
+      - Use multi-stage Docker builds

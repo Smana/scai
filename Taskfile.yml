@@ -1,0 +1,150 @@
+version: '3'
+
+# SCIA Task Runner Configuration
+# Uses Dagger modules from Daggerverse for all build and CI tasks
+# Dagger modules used:
+#   - sagikazarmark/daggerverse/go: Comprehensive Go tooling (build, cache management)
+#   - purpleclay/daggerverse/golang: Testing, linting, vulnerability scanning
+
+vars:
+  BINARY_NAME: scia
+  DAGGER_GO_MODULE: github.com/sagikazarmark/daggerverse/go@v0.9.0
+  DAGGER_GOLANG_MODULE: github.com/purpleclay/daggerverse/golang@v0.5.0
+
+tasks:
+  default:
+    desc: Default task - build the binary
+    cmds:
+      - task: build
+
+  build:
+    desc: Build the SCIA binary using Dagger
+    cmds:
+      - |
+        dagger call -m {{.DAGGER_GO_MODULE}} \
+          with-source --source=. \
+          with-module-cache \
+          with-build-cache \
+          build \
+          export --path={{.BINARY_NAME}}
+    sources:
+      - "**/*.go"
+      - go.mod
+      - go.sum
+    generates:
+      - "{{.BINARY_NAME}}"
+
+  install:
+    desc: Build and install the binary globally
+    deps:
+      - build
+    cmds:
+      - go install
+
+  test:
+    desc: Run all tests using Dagger
+    cmds:
+      - |
+        dagger call -m {{.DAGGER_GOLANG_MODULE}} \
+          --source=. \
+          test
+    sources:
+      - "**/*.go"
+      - go.mod
+      - go.sum
+
+  test-verbose:
+    desc: Run tests with verbose output
+    cmds:
+      - |
+        dagger call -m {{.DAGGER_GOLANG_MODULE}} \
+          --source=. \
+          test --verbose=true
+
+  lint:
+    desc: Lint code using golangci-lint via Dagger
+    cmds:
+      - |
+        dagger call -m {{.DAGGER_GOLANG_MODULE}} \
+          --source=. \
+          lint
+
+  lint-format:
+    desc: Format code using gofumpt via Dagger
+    cmds:
+      - |
+        dagger call -m {{.DAGGER_GOLANG_MODULE}} \
+          --source=. \
+          format \
+          export --path=.
+
+  vulncheck:
+    desc: Scan for vulnerabilities using govulncheck
+    cmds:
+      - |
+        dagger call -m {{.DAGGER_GOLANG_MODULE}} \
+          --source=. \
+          vulncheck
+
+  bench:
+    desc: Run benchmarks
+    cmds:
+      - |
+        dagger call -m {{.DAGGER_GOLANG_MODULE}} \
+          --source=. \
+          bench
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - go clean
+      - rm -f {{.BINARY_NAME}}
+
+  run-example:
+    desc: Run example deployment
+    deps:
+      - build
+    cmds:
+      - |
+        ./{{.BINARY_NAME}} deploy \
+          "Deploy this Flask app on AWS" \
+          https://github.com/Arvo-AI/hello_world
+
+  check:
+    desc: Run all checks (test, lint, vulncheck)
+    cmds:
+      - task: test
+      - task: lint
+      - task: vulncheck
+
+  ci:
+    desc: Complete CI pipeline (build, test, lint, vulncheck)
+    cmds:
+      - task: build
+      - task: test
+      - task: lint
+      - task: vulncheck
+
+  mod-version:
+    desc: Show Go version from go.mod
+    cmds:
+      - |
+        dagger call -m {{.DAGGER_GOLANG_MODULE}} \
+          --source=. \
+          mod-version
+
+  container:
+    desc: Build container with the SCIA binary
+    cmds:
+      - |
+        dagger call -m {{.DAGGER_GO_MODULE}} \
+          with-source --source=. \
+          with-module-cache \
+          with-build-cache \
+          build \
+          as-service
+
+  help:
+    desc: Show all available tasks
+    cmds:
+      - task --list
