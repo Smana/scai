@@ -206,13 +206,13 @@ func (c *Client) estimateMemory(analysis *types.Analysis) string {
 	framework := strings.ToLower(analysis.Framework)
 
 	memoryMap := map[string]string{
-		"flask":    "256MB-512MB",
-		"django":   "512MB-1GB",
-		"fastapi":  "128MB-256MB",
-		"express":  "128MB-256MB",
-		"nextjs":   "256MB-512MB",
-		"go":       "50MB-200MB",
-		"rails":    "512MB-1GB",
+		"flask":     "256MB-512MB",
+		"django":    "512MB-1GB",
+		"fastapi":   "128MB-256MB",
+		"express":   "128MB-256MB",
+		"nextjs":    "256MB-512MB",
+		"go":        "50MB-200MB",
+		"rails":     "512MB-1GB",
 		"streamlit": "256MB-512MB",
 	}
 

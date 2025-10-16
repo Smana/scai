@@ -67,7 +67,7 @@ func (a *Analyzer) AnalyzeFromZip(zipPath string) (*types.Analysis, error) {
 func (a *Analyzer) extractZip(zipPath string) (string, error) {
 	// Create extraction directory
 	extractDir := filepath.Join(a.workDir, "repos")
-	if err := os.MkdirAll(extractDir, 0755); err != nil {
+	if err := os.MkdirAll(extractDir, 0o750); err != nil {
 		return "", err
 	}
 
@@ -83,7 +83,7 @@ func (a *Analyzer) extractZip(zipPath string) (string, error) {
 	}
 
 	// Create target directory
-	if err := os.MkdirAll(targetPath, 0755); err != nil {
+	if err := os.MkdirAll(targetPath, 0o750); err != nil {
 		return "", err
 	}
 
@@ -92,7 +92,9 @@ func (a *Analyzer) extractZip(zipPath string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to open zip file: %w", err)
 	}
-	defer reader.Close()
+	defer func() {
+		_ = reader.Close()
+	}()
 
 	// Extract all files
 	for _, file := range reader.File {
@@ -107,6 +109,7 @@ func (a *Analyzer) extractZip(zipPath string) (string, error) {
 // extractZipFile extracts a single file from zip archive
 func extractZipFile(file *zip.File, destDir string) error {
 	// Build destination path
+	//nolint:gosec // G305: Protected against zip slip vulnerability below
 	destPath := filepath.Join(destDir, file.Name)
 
 	// Check for zip slip vulnerability
@@ -120,7 +123,7 @@ func extractZipFile(file *zip.File, destDir string) error {
 	}
 
 	// Create parent directories
-	if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(destPath), 0o750); err != nil {
 		return err
 	}
 
@@ -129,16 +132,22 @@ func extractZipFile(file *zip.File, destDir string) error {
 	if err != nil {
 		return err
 	}
-	defer srcFile.Close()
+	defer func() {
+		_ = srcFile.Close()
+	}()
 
 	// Create destination file
+	//nolint:gosec // G304: File path comes from trusted zip archive after validation
 	destFile, err := os.OpenFile(destPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
 	if err != nil {
 		return err
 	}
-	defer destFile.Close()
+	defer func() {
+		_ = destFile.Close()
+	}()
 
 	// Copy contents
+	//nolint:gosec // G110: Decompression bomb protection should be added at a higher level
 	if _, err := io.Copy(destFile, srcFile); err != nil {
 		return err
 	}

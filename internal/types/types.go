@@ -36,13 +36,13 @@ type DeploymentResult struct {
 
 // DeploymentRule represents a heuristic decision rule
 type DeploymentRule struct {
-	Name          string
-	Priority      int
-	Description   string
-	Conditions    RuleConditions
+	Name           string
+	Priority       int
+	Description    string
+	Conditions     RuleConditions
 	Recommendation string
-	InstanceType  string
-	Reason        string
+	InstanceType   string
+	Reason         string
 }
 
 // RuleConditions defines conditions for a deployment rule
@@ -65,17 +65,17 @@ type DeploymentRules struct {
 
 // InstanceTypeInfo contains EC2 instance type details
 type InstanceTypeInfo struct {
-	VCPU         int
-	MemoryGB     int
-	CostPerHour  float64
-	UseCases     []string
+	VCPU        int
+	MemoryGB    int
+	CostPerHour float64
+	UseCases    []string
 }
 
 // FrameworkOptimization contains framework-specific deployment optimizations
 type FrameworkOptimization struct {
-	ProductionServer    string
-	Workers             string
-	RecommendedPorts    []int
-	AdditionalPackages  []string
-	Notes               []string
+	ProductionServer   string
+	Workers            string
+	RecommendedPorts   []int
+	AdditionalPackages []string
+	Notes              []string
 }
