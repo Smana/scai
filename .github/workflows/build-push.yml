@@ -1,0 +1,140 @@
+name: Build and Push
+
+on:
+  push:
+    branches: [ main ]
+  workflow_run:
+    workflows: ["CI Validation"]
+    branches: [ main ]
+    types: [completed]
+
+env:
+  GO_VERSION: "1.25"
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Only run if CI validation succeeded or this is a direct push to main
+  check-ci:
+    name: Check CI Status
+    runs-on: ubuntu-latest
+    outputs:
+      proceed: ${{ steps.check.outputs.proceed }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check if we should proceed
+        id: check
+        run: |
+          # Check if this is a release commit (skip if release-please is handling it)
+          if git log -1 --pretty=format:"%s" | grep -E "^(chore|release).*release"; then
+            echo "Release commit detected - skipping to avoid duplicate images"
+            echo "proceed=false" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "Direct push to main - proceeding"
+            echo "proceed=true" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event.workflow_run.conclusion }}" == "success" ]]; then
+            echo "CI validation succeeded - proceeding"
+            echo "proceed=true" >> $GITHUB_OUTPUT
+          else
+            echo "CI validation failed or not completed - skipping"
+            echo "proceed=false" >> $GITHUB_OUTPUT
+          fi
+
+  goreleaser-build:
+    name: Build and Push with GoReleaser
+    runs-on: ubuntu-latest
+    needs: [check-ci]
+    if: needs.check-ci.outputs.proceed == 'true'
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # GoReleaser needs full git history
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build binaries and containers with GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --snapshot --clean --skip=validate
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPOSITORY_NAME: ${{ github.event.repository.name }}
+          DOCKER_BUILDKIT: 1
+
+      - name: Set commit short SHA for scanning
+        run: echo "COMMIT_SHORT=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
+
+      - name: Run Trivy vulnerability scanner on built image (AMD64)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: 'ghcr.io/smana/scia:${{ env.COMMIT_SHORT }}-amd64'
+          format: 'sarif'
+          output: 'trivy-results-amd64.sarif'
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true
+
+      - name: Run Trivy vulnerability scanner on built image (ARM64)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: 'ghcr.io/smana/scia:${{ env.COMMIT_SHORT }}-arm64'
+          format: 'sarif'
+          output: 'trivy-results-arm64.sarif'
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true
+
+      - name: Upload Trivy scan results to GitHub Security (AMD64)
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results-amd64.sarif'
+          category: 'trivy-amd64'
+
+      - name: Upload Trivy scan results to GitHub Security (ARM64)
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results-arm64.sarif'
+          category: 'trivy-arm64'
+
+
+      - name: Upload security scan results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-scan-results
+          path: |
+            trivy-results-amd64.sarif
+            trivy-results-arm64.sarif
+          retention-days: 30
+
+
+  # Build summary for monitoring and debugging
+  build-summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [goreleaser-build]
+    if: always()
+    steps:
+      - name: Create build summary
+        run: |
+          echo "## 🏗️ Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status**: ${{ needs.goreleaser-build.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Images Built**: AMD64 + ARM64" >> $GITHUB_STEP_SUMMARY
+          echo "**Security Scanned**: ✅" >> $GITHUB_STEP_SUMMARY

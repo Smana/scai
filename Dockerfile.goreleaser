@@ -1,0 +1,17 @@
+# GoReleaser Dockerfile for optimized production image
+FROM gcr.io/distroless/static-debian12:nonroot
+
+# Install ca-certificates and timezone data in distroless
+# Note: These are already included in the distroless image
+
+# Copy the binary (GoReleaser will handle this automatically)
+COPY scia /app/scia
+
+WORKDIR /app
+
+# Use non-root user (already configured in distroless:nonroot)
+USER nonroot:nonroot
+
+# Command to run the executable
+ENTRYPOINT ["/app/scia"]
+CMD ["--help"]

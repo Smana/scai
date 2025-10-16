@@ -45,9 +45,9 @@ tasks:
     desc: Run all tests using Dagger
     cmds:
       - |
-        dagger call -m {{.DAGGER_GOLANG_MODULE}} \
-          --source=. \
-          test
+        dagger call -m {{.DAGGER_GO_MODULE}} \
+          with-source --source=. \
+          exec --args=go,test,./...,--race,--short
     sources:
       - "**/*.go"
       - go.mod
@@ -57,42 +57,43 @@ tasks:
     desc: Run tests with verbose output
     cmds:
       - |
-        dagger call -m {{.DAGGER_GOLANG_MODULE}} \
-          --source=. \
-          test --verbose=true
+        dagger call -m {{.DAGGER_GO_MODULE}} \
+          with-source --source=. \
+          exec --args=go,test,-v,./...
 
   lint:
     desc: Lint code using golangci-lint via Dagger
     cmds:
       - |
-        dagger call -m {{.DAGGER_GOLANG_MODULE}} \
-          --source=. \
-          lint
+        dagger call -m {{.DAGGER_GO_MODULE}} \
+          with-source --source=. \
+          exec --args=go,run,github.com/golangci/golangci-lint/cmd/golangci-lint@latest,run,./...
 
   lint-format:
     desc: Format code using gofumpt via Dagger
     cmds:
       - |
-        dagger call -m {{.DAGGER_GOLANG_MODULE}} \
-          --source=. \
-          format \
+        dagger call -m {{.DAGGER_GO_MODULE}} \
+          with-source --source=. \
+          exec --args=go,run,mvdan.cc/gofumpt@latest,-l,-w,. \
+          directory --path=. \
           export --path=.
 
   vulncheck:
     desc: Scan for vulnerabilities using govulncheck
     cmds:
       - |
-        dagger call -m {{.DAGGER_GOLANG_MODULE}} \
-          --source=. \
-          vulncheck
+        dagger call -m {{.DAGGER_GO_MODULE}} \
+          with-source --source=. \
+          exec --args=go,run,golang.org/x/vuln/cmd/govulncheck@latest,./...
 
   bench:
     desc: Run benchmarks
     cmds:
       - |
-        dagger call -m {{.DAGGER_GOLANG_MODULE}} \
-          --source=. \
-          bench
+        dagger call -m {{.DAGGER_GO_MODULE}} \
+          with-source --source=. \
+          exec --args=go,test,-bench=.,./...
 
   clean:
     desc: Clean build artifacts
@@ -128,10 +129,7 @@ tasks:
   mod-version:
     desc: Show Go version from go.mod
     cmds:
-      - |
-        dagger call -m {{.DAGGER_GOLANG_MODULE}} \
-          --source=. \
-          mod-version
+      - grep "^go " go.mod | awk '{print $2}'
 
   container:
     desc: Build container with the SCIA binary

@@ -1,0 +1,75 @@
+run:
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gocyclo
+    - misspell
+    - gocritic
+    - goconst
+    - gosec
+    - unconvert
+    - dupl
+    - prealloc
+    - gofmt
+    - goimports
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: false
+  gocyclo:
+    min-complexity: 10
+  dupl:
+    threshold: 100
+  goconst:
+    min-len: 3
+    min-occurrences: 2
+  misspell:
+    locale: US
+  goimports:
+    local-prefixes: github.com/Smana/scia
+  gocritic:
+    enabled-tags:
+      - performance
+      - style
+      - experimental
+    disabled-checks:
+      - wrapperFunc
+      - dupImport
+      - ifElseChain
+      - paramTypeCombine
+      - hugeParam
+      - exitAfterDefer
+
+issues:
+  exclude-use-default: false
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+        - goconst
+    - path: cmd/
+      linters:
+        - gocyclo
+    - path: internal/llm/
+      linters:
+        - gocyclo
+        - goconst
+        - gocritic
+    - path: internal/analyzer/
+      linters:
+        - goconst
+  max-issues-per-linter: 0
+  max-same-issues: 0

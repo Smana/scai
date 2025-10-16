@@ -12,6 +12,12 @@ var (
 	cfgFile string
 	workDir string
 	verbose bool
+
+	// Version information set by main package
+	version string
+	commit  string
+	date    string
+	builtBy string
 )
 
 // rootCmd represents the base command
@@ -25,6 +31,15 @@ infrastructure using Terraform.
 Example:
   scia deploy "Deploy this Flask app on AWS" https://github.com/Arvo-AI/hello_world
   scia deploy "Deploy microservices" /path/to/app.zip`,
+}
+
+// SetVersionInfo sets version information from main package
+func SetVersionInfo(v, c, d, b string) {
+	version = v
+	commit = c
+	date = d
+	builtBy = b
+	rootCmd.Version = fmt.Sprintf("%s (commit: %s, built: %s by %s)", version, commit, date, builtBy)
 }
 
 // Execute runs the root command
@@ -44,8 +59,8 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
 
 	// Bind flags to Viper
-	viper.BindPFlag("workdir", rootCmd.PersistentFlags().Lookup("work-dir"))
-	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
+	_ = viper.BindPFlag("workdir", rootCmd.PersistentFlags().Lookup("work-dir"))
+	_ = viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
 }
 
 func initConfig() {
