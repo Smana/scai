@@ -20,12 +20,15 @@ builds:
     goarch:
       - amd64
       - arm64
+    flags:
+      - -trimpath
     ldflags:
       - -s -w
       - -X main.version={{ .Version }}
       - -X main.commit={{ .Commit }}
       - -X main.date={{ .Date }}
       - -X main.builtBy=goreleaser
+    mod_timestamp: "{{ .CommitTimestamp }}"
 
 archives:
   - id: scia

@@ -15,8 +15,19 @@ SCIA (Smart Cloud Infrastructure Automation) is a Go-based CLI tool that analyze
 
 **IMPORTANT**: This project uses **Taskfile** (not Makefile) and **Dagger** for all build and CI tasks. All build operations use Dagger modules from the Daggerverse for consistency and reproducibility.
 
+### Go Version
+This project uses **Go 1.25** which includes:
+- **DWARF5 debug information** for smaller binaries and faster linking
+- **Improved stack allocation** for slices, reducing heap allocations
+- **Container-aware GOMAXPROCS** respecting cgroup CPU limits
+- **Enhanced error handling** - always check errors immediately before dereferencing values
+- **New testing/synctest package** for robust concurrent code testing
+
 ### Prerequisites
 ```bash
+# Install Go 1.25
+# Download from https://go.dev/dl/
+
 # Install Dagger
 curl -L https://dl.dagger.io/dagger/install.sh | sh
 
@@ -216,7 +227,7 @@ Viper configuration order (cmd/root.go):
 - **go-git**: Git repository operations (if analyzer uses it)
 
 ### External Tools Required
-- **Go 1.24+**: Required for building
+- **Go 1.25+**: Required for building (leverages DWARF5, improved allocations, container-aware GOMAXPROCS)
 - **Dagger**: Container-based CI/CD engine for build tasks
 - **Task**: Modern task runner (replaces Make)
 - **Ollama**: LLM inference (default: qwen2.5-coder:7b model)
@@ -262,3 +273,53 @@ The knowledge base (internal/llm/knowledge.go) is the core of AI decision-making
 - Common port mappings
 
 When modifying, ensure consistency between knowledge base, few-shot examples, and deployment rules.
+
+## Go 1.25 Best Practices
+
+This project follows Go 1.25 best practices:
+
+### Error Handling
+**CRITICAL**: Go 1.25 fixed a nil pointer bug from Go 1.21. Always check errors **immediately** before accessing results:
+
+```go
+// ✅ CORRECT - Check error before using result
+result, err := someFunc()
+if err != nil {
+    return nil, fmt.Errorf("operation failed: %w", err)
+}
+// Now safe to use result
+
+// ❌ WRONG - Will panic in Go 1.25+
+result, err := someFunc()
+doSomething(result.Field) // Panic if err != nil!
+if err != nil {
+    return err
+}
+```
+
+### Build Flags
+The project uses optimized build flags in `.goreleaser.yml`:
+- `-trimpath`: Remove build paths for reproducible builds
+- `-s -w`: Strip debug info and symbol table
+- `mod_timestamp`: Deterministic builds
+- DWARF5 is enabled by default in Go 1.25 (smaller binaries, faster linking)
+
+### Performance
+- Slice backing storage is auto-allocated on stack when possible (Go 1.25 optimization)
+- Use container-aware GOMAXPROCS for proper CPU limit respect in Docker/K8s
+
+### Testing
+- Use `testing/synctest` package for testing concurrent code with virtual time
+- Run tests with `-race` flag to catch data races (enabled in CI)
+
+### Code Quality
+All code must pass golangci-lint with:
+- errcheck: No ignored errors
+- gosec: Security scanning
+- gocyclo: Complexity < 10 (exceptions in llm/ and analyzer/)
+- goconst: Repeated strings as constants (exceptions in llm/ and analyzer/)
+
+### Linting Exceptions
+- `internal/llm/`: Excluded from gocyclo, goconst, gocritic (AI prompts have natural complexity)
+- `internal/analyzer/`: Excluded from goconst (framework names are intentionally hardcoded)
+- Test files: Excluded from most linters except critical ones

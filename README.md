@@ -1,6 +1,17 @@
-# Auto-Deployment Chat System
+# Scia: AI-Powered Infrastructure Automation
 
-**Professional Go implementation** of an intelligent auto-deployment system that analyzes code repositories, determines optimal deployment strategies using AI, and automatically provisions infrastructure using Terraform.
+> **"Just tell it what to deploy, it figures out how."**
+
+**Scia** (from Latin "scio" - *I know* + IA) is an intelligent deployment assistant that analyzes your code, determines the best deployment strategy using AI, and automatically provisions cloud infrastructure - all from a single command.
+
+**No YAML. No configuration files. Just natural language.**
+
+```bash
+scia deploy "Deploy this Flask app on AWS" https://github.com/your-org/app
+```
+
+That's it. Scia handles the rest - analyzing your code, choosing the right infrastructure (VM, Kubernetes, or Serverless), generating Terraform, and deploying to AWS.
+
 
 ## Features
 
