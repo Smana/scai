@@ -304,9 +304,9 @@ const FewShotExamples = `# Example Deployment Decisions
 // DecisionPromptTemplate is the template for the final decision prompt
 const DecisionPromptTemplate = `Based on the knowledge base and examples above, analyze this new application:
 
-**User Request:** %s
+**IMPORTANT:** Your recommendation must be based PRIMARILY on the actual code analysis below, NOT on the user's request. The user request is only for context.
 
-**Application Analysis:**
+**Application Code Analysis (PRIMARY DECISION FACTORS):**
 - Framework: %s
 - Language: %s
 - Dependencies: %d packages
@@ -316,12 +316,20 @@ const DecisionPromptTemplate = `Based on the knowledge base and examples above, 
 - Start Command: %s
 - Estimated Memory: %s
 
+**User Request (Context Only):** %s
+
+**Decision Rules:**
+1. If docker-compose detected → RECOMMEND kubernetes (multi-container orchestration needed)
+2. If stateless + <5 dependencies → CONSIDER serverless (simple, scalable)
+3. If >20 dependencies → RECOMMEND kubernetes (complex application needs isolation)
+4. If Dockerfile + <15 dependencies → vm is sufficient (simple containerized app)
+5. IGNORE user request if it conflicts with code analysis
+
 **Your Task:**
-Recommend the BEST deployment strategy for this application.
+Analyze the APPLICATION CODE CHARACTERISTICS and recommend the BEST deployment strategy.
+Base your decision on what the code tells you, not what the user requested.
 
 **Response Format:**
 STRATEGY: <vm|kubernetes|serverless>
-REASON: <one sentence explanation>
-
-Respond now:
+REASON: <one sentence explaining why based on CODE analysis>
 `

@@ -6,84 +6,105 @@ import (
 	"regexp"
 	"strings"
 
-	// TODO: Replace with actual Ollama Go client
-	// Common options:
-	//   - github.com/ollama/ollama/api (official)
-	//   - github.com/jmorganca/ollama/api
 	"github.com/Smana/scia/internal/types"
 )
 
-// Stub types for Ollama client - replace with actual implementation
-type ollamaClient struct {
-	baseURL string
-}
-
-type GenerateRequest struct {
-	Model   string
-	Prompt  string
-	Options *Options
-}
-
-type Options struct {
-	Temperature float64
-	NumPredict  int
-}
-
-type GenerateResponse struct {
-	Response string
-}
-
+// Client provides high-level LLM operations with multi-provider support
 type Client struct {
-	client *ollamaClient
-	model  string
+	providerManager *ProviderManager
+	config          *ProviderConfig
 }
 
+// NewClient creates a new LLM client with provider configuration
+// Maintains backward compatibility with existing code
 func NewClient(baseURL, model string) *Client {
+	// Build configuration from parameters
+	config := &ProviderConfig{
+		Type:         "ollama", // Default to Ollama
+		OllamaURL:    baseURL,
+		OllamaModel:  model,
+		DefaultModel: model,
+		Timeout:      60,
+		Retries:      3,
+		Temperature:  0.7,
+	}
+
+	// Initialize provider manager
+	pm, err := NewProviderManager(config, false)
+	if err != nil {
+		// Fallback to minimal config
+		logger.Printf("Warning: Failed to initialize LLM providers: %v", err)
+	}
+
 	return &Client{
-		client: &ollamaClient{baseURL: baseURL},
-		model:  model,
+		providerManager: pm,
+		config:          config,
 	}
 }
 
-// generate is a stub method - replace with actual Ollama API call
-func (c *Client) generate(ctx context.Context, req GenerateRequest) (*GenerateResponse, error) {
-	// TODO: Implement actual Ollama API call
-	// For now, return empty response to allow compilation
-	return &GenerateResponse{Response: ""}, fmt.Errorf("Ollama client not implemented - add actual Ollama Go SDK")
+// NewClientWithConfig creates a client with custom configuration
+// Allows specifying provider type, model preferences, etc.
+func NewClientWithConfig(config *ProviderConfig, verbose bool) (*Client, error) {
+	pm, err := NewProviderManager(config, verbose)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Client{
+		providerManager: pm,
+		config:          config,
+	}, nil
 }
 
 // DetermineStrategy uses LLM with comprehensive context to determine deployment strategy
+// Supports multiple providers with automatic fallback
 func (c *Client) DetermineStrategy(userPrompt string, analysis *types.Analysis) (string, error) {
+	// If no provider manager available, use heuristics immediately
+	if c.providerManager == nil {
+		if analysis.Verbose {
+			logger.Printf("No LLM providers available, using heuristics")
+		}
+		strategy := c.fallbackStrategy(analysis)
+		return strategy, nil
+	}
+
+	ctx := context.Background()
+
 	// Build comprehensive prompt with knowledge base and examples
 	prompt := c.buildStrategyPrompt(userPrompt, analysis)
 
-	// Generate response
-	req := GenerateRequest{
-		Model:  c.model,
-		Prompt: prompt,
-		Options: &Options{
-			Temperature: 0.7,
-			NumPredict:  200,
-		},
+	// Create generation request
+	req := &GenerateRequest{
+		Model:       c.config.DefaultModel,
+		Prompt:      prompt,
+		Temperature: 0.7,
+		MaxTokens:   200,
 	}
 
-	resp, err := c.generate(context.Background(), req)
+	// Generate using provider manager (with automatic fallback)
+	resp, err := c.providerManager.Generate(ctx, req)
 	if err != nil {
-		return "", fmt.Errorf("LLM generation failed: %w", err)
+		// If all providers fail, fall back to heuristics
+		logger.Printf("All LLM providers failed: %v, using heuristics", err)
+		strategy := c.fallbackStrategy(analysis)
+		return strategy, nil
 	}
 
 	// Parse response
-	strategy, reason := c.parseStrategyResponse(resp.Response)
+	strategy, reason := c.parseStrategyResponse(resp.Text)
 
 	if strategy == "" {
-		// Fallback to simple heuristics if LLM response is unclear
+		// Fallback to heuristics if LLM response is unclear
 		strategy = c.fallbackStrategy(analysis)
 		reason = "Fallback heuristic (LLM response unclear)"
-	}
-
-	// Log the decision (optional, for debugging)
-	if analysis.Verbose {
-		fmt.Printf("LLM Decision: %s\nReason: %s\n", strategy, reason)
+		if analysis.Verbose {
+			logger.Printf("Heuristic Decision: %s\nReason: %s\n", strategy, reason)
+		}
+	} else {
+		// Log the decision
+		if analysis.Verbose {
+			logger.Printf("LLM Decision: %s\nReason: %s\nModel: %s\n", strategy, reason, resp.Model)
+		}
 	}
 
 	return strategy, nil
@@ -102,8 +123,8 @@ func (c *Client) buildStrategyPrompt(userPrompt string, analysis *types.Analysis
 	sb.WriteString("\n\n")
 
 	// Add the specific question with analysis
+	// NOTE: Analysis parameters come FIRST, userPrompt is LAST (lower priority)
 	prompt := fmt.Sprintf(DecisionPromptTemplate,
-		userPrompt,
 		analysis.Framework,
 		analysis.Language,
 		len(analysis.Dependencies),
@@ -112,6 +133,7 @@ func (c *Client) buildStrategyPrompt(userPrompt string, analysis *types.Analysis
 		analysis.Port,
 		analysis.StartCommand,
 		c.estimateMemory(analysis),
+		userPrompt,
 	)
 
 	sb.WriteString(prompt)
@@ -313,35 +335,57 @@ func (c *Client) ValidateDeploymentRequirements(analysis *types.Analysis, strate
 	case "serverless":
 		// Check for stateful patterns
 		if analysis.HasDockerCompose {
-			warnings = append(warnings, "⚠️ docker-compose detected but serverless recommended - this may not work")
+			warnings = append(warnings, "⚠️  docker-compose detected but serverless recommended - this may not work")
 		}
 
 		statefulFrameworks := []string{"django", "rails"}
 		for _, fw := range statefulFrameworks {
 			if strings.ToLower(analysis.Framework) == fw {
-				warnings = append(warnings, fmt.Sprintf("⚠️ %s is typically stateful - serverless may require significant modifications", analysis.Framework))
+				warnings = append(warnings, fmt.Sprintf("⚠️  %s is typically stateful - serverless may require significant modifications", analysis.Framework))
 			}
 		}
 
 	case "kubernetes":
 		if !analysis.HasDockerfile && !analysis.HasDockerCompose {
-			warnings = append(warnings, "⚠️ Kubernetes recommended but no Dockerfile found - containerization needed")
+			warnings = append(warnings, "⚠️  Kubernetes recommended but no Dockerfile found - containerization needed")
 		}
 
 	case "vm":
 		if len(analysis.Dependencies) > 30 {
-			warnings = append(warnings, "⚠️ High dependency count - consider Kubernetes for better management")
+			warnings = append(warnings, "⚠️  High dependency count - consider Kubernetes for better management")
 		}
 	}
 
 	// Check for unknown frameworks
 	if analysis.Framework == "unknown" {
-		warnings = append(warnings, "⚠️ Unable to detect framework - deployment may require manual configuration")
+		warnings = append(warnings, "⚠️  Unable to detect framework - deployment may require manual configuration")
 	}
 
 	if analysis.StartCommand == "unknown" {
-		warnings = append(warnings, "⚠️ Unable to detect start command - manual configuration required")
+		warnings = append(warnings, "⚠️  Unable to detect start command - manual configuration required")
 	}
 
 	return warnings
+}
+
+// Generate provides direct access to LLM generation (for config parsing, etc.)
+func (c *Client) Generate(ctx context.Context, req *GenerateRequest) (*GenerateResponse, error) {
+	if c.providerManager == nil {
+		return nil, ErrNoProvidersAvailable
+	}
+
+	// Set default model if not specified
+	if req.Model == "" {
+		req.Model = c.config.DefaultModel
+	}
+
+	return c.providerManager.Generate(ctx, req)
+}
+
+// ListAvailableModels returns all models across all providers
+func (c *Client) ListAvailableModels(ctx context.Context) ([]ModelInfo, error) {
+	if c.providerManager == nil {
+		return nil, ErrNoProvidersAvailable
+	}
+	return c.providerManager.ListAllModels(ctx)
 }

@@ -28,15 +28,65 @@ func (a *Analyzer) Analyze(repoURL string) (*types.Analysis, error) {
 		return a.AnalyzeFromZip(repoURL)
 	}
 
-	// TODO: Implement GitHub repository cloning and analysis
-	// For now, return placeholder
-	return &types.Analysis{
-		RepoURL:      repoURL,
-		Framework:    "unknown",
-		Language:     "unknown",
-		Port:         8080,
-		StartCommand: "unknown",
-	}, nil
+	// Clone Git repository
+	repoDir := filepath.Join(a.workDir, "repo")
+
+	if a.verbose {
+		println("Cloning repository:", repoURL)
+	}
+
+	if err := CloneRepository(repoURL, repoDir); err != nil {
+		return nil, err
+	}
+
+	// Analyze the cloned repository
+	return a.analyzeDirectory(repoDir, repoURL)
+}
+
+// analyzeDirectory analyzes a directory containing application code
+func (a *Analyzer) analyzeDirectory(repoPath, repoURL string) (*types.Analysis, error) {
+	analysis := &types.Analysis{
+		RepoURL:  repoURL,
+		RepoPath: repoPath,
+		Verbose:  a.verbose,
+	}
+
+	// Detect framework
+	framework, err := a.detectFramework(repoPath)
+	if err != nil {
+		return nil, err
+	}
+	analysis.Framework = framework
+
+	// Detect language
+	language := a.detectLanguage(repoPath)
+	analysis.Language = language
+
+	// Extract dependencies
+	deps, err := a.extractDependencies(repoPath, language)
+	if err != nil {
+		return nil, err
+	}
+	analysis.Dependencies = deps
+
+	// Detect start command
+	startCmd := a.detectStartCommand(repoPath, framework)
+	analysis.StartCommand = startCmd
+
+	// Detect port
+	port := a.detectPort(repoPath, framework)
+	analysis.Port = port
+
+	// Extract environment variables
+	envVars := a.extractEnvVars(repoPath)
+	analysis.EnvVars = envVars
+
+	// Check for special files
+	analysis.HasDockerfile = fileExists(filepath.Join(repoPath, "Dockerfile"))
+	analysis.HasDockerCompose = fileExists(filepath.Join(repoPath, "docker-compose.yml")) ||
+		fileExists(filepath.Join(repoPath, "docker-compose.yaml"))
+
+	return analysis, nil
 }
 
 // detectFramework detects the application framework
