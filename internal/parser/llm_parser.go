@@ -26,8 +26,8 @@ Analyze the request and extract any deployment configuration parameters mentione
 **Available Parameters:**
 - strategy: vm, kubernetes, serverless
 - region: AWS regions (us-east-1, eu-west-1, ap-south-1, etc.)
-- ec2_instance_type: t2.micro, t3.small, t3.medium, t3.large, t3.xlarge, m5.large, etc.
-- eks_node_type: same as ec2_instance_type
+- ec2_instance_type: AWS EC2 instance types (e.g., t3.large, r5.xlarge, m5.2xlarge)
+- eks_node_type: AWS EC2 instance types for Kubernetes nodes
 - eks_nodes: number of nodes (min, max, desired)
 - lambda_memory: memory in MB (128-10240)
 - volume_size: disk size in GB
@@ -46,9 +46,8 @@ Analyze the request and extract any deployment configuration parameters mentione
 }
 
 **Important:**
-- Only include parameters that are explicitly or implicitly mentioned
-- If user says "large instance", map to t3.large
-- If user says "small", map to t3.small or t3.micro
+- Only include parameters that are explicitly mentioned
+- Preserve exact instance types when specified (e.g., "r5.large", "m5.xlarge", "t3.medium")
 - If user says "3 nodes", set all node counts to 3
 - Understand variations: "EKS", "Kubernetes", "K8s" all mean strategy=kubernetes
 - Empty/missing fields mean "not specified"
