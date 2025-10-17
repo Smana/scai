@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/ollama/ollama/api"
@@ -120,13 +121,12 @@ func (p *OllamaProvider) Generate(ctx context.Context, req *GenerateRequest) (*G
 
 // ListModels returns available Ollama models
 func (p *OllamaProvider) ListModels(ctx context.Context) ([]ModelInfo, error) {
-	var models []ModelInfo
-
 	resp, err := p.client.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list ollama models: %w", err)
 	}
 
+	models := make([]ModelInfo, 0, len(resp.Models))
 	for _, model := range resp.Models {
 		models = append(models, ModelInfo{
 			Name:         model.Name,
@@ -160,26 +160,13 @@ func extractModelSize(modelName string) string {
 func extractModelType(modelName string) string {
 	// Determine model type from name
 	switch {
-	case contains(modelName, "code"):
+	case strings.Contains(modelName, "code"):
 		return "code"
-	case contains(modelName, "instruct"):
+	case strings.Contains(modelName, "instruct"):
 		return "instruct"
-	case contains(modelName, "chat"):
+	case strings.Contains(modelName, "chat"):
 		return "chat"
 	default:
 		return "general"
 	}
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || findSubstring(s, substr) >= 0)
-}
-
-func findSubstring(s, substr string) int {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return i
-		}
-	}
-	return -1
 }

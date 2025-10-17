@@ -149,7 +149,7 @@ func (p *HuggingFaceProvider) ListModels(ctx context.Context) ([]ModelInfo, erro
 		"bigcode/starcoder",
 	}
 
-	var models []ModelInfo
+	models := make([]ModelInfo, 0, len(popularModels))
 	for _, modelName := range popularModels {
 		models = append(models, ModelInfo{
 			Name:         modelName,

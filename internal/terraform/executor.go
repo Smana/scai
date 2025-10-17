@@ -2,8 +2,11 @@ package terraform
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -14,13 +17,51 @@ type Executor struct {
 	verbose bool
 }
 
-// NewExecutor creates a new Terraform executor
-func NewExecutor(workDir, tfBin string, verbose bool) *Executor {
+// NewExecutor creates a new Terraform executor with path validation
+func NewExecutor(workDir, tfBin string, verbose bool) (*Executor, error) {
+	// Validate tfBin is an absolute path or in PATH
+	validatedBin, err := validateTerraformBinary(tfBin)
+	if err != nil {
+		return nil, fmt.Errorf("invalid terraform binary: %w", err)
+	}
+
 	return &Executor{
 		workDir: workDir,
-		tfBin:   tfBin,
+		tfBin:   validatedBin,
 		verbose: verbose,
+	}, nil
+}
+
+// validateTerraformBinary ensures the binary is safe to execute
+func validateTerraformBinary(bin string) (string, error) {
+	// Allow only specific binary names
+	allowedBinaries := map[string]bool{
+		"terraform": true,
+		"tofu":      true,
 	}
+
+	baseName := filepath.Base(bin)
+	if !allowedBinaries[baseName] {
+		return "", fmt.Errorf("binary name must be 'terraform' or 'tofu', got: %s", baseName)
+	}
+
+	// Check if binary exists and is executable
+	absPath, err := exec.LookPath(bin)
+	if err != nil {
+		return "", fmt.Errorf("binary not found in PATH: %w", err)
+	}
+
+	// Verify it's a regular file
+	info, err := os.Stat(absPath)
+	if err != nil {
+		return "", fmt.Errorf("cannot stat binary: %w", err)
+	}
+
+	if !info.Mode().IsRegular() {
+		return "", fmt.Errorf("not a regular file: %s", absPath)
+	}
+
+	return absPath, nil
 }
 
 // Init initializes Terraform in the working directory
@@ -77,31 +118,32 @@ func (e *Executor) Outputs() (map[string]string, error) {
 		return nil, fmt.Errorf("failed to get outputs: %w\nOutput: %s", err, string(output))
 	}
 
-	// Parse JSON output
-	outputs := make(map[string]string)
-
-	// Simple JSON parsing for outputs
-	// Format: {"output_name": {"value": "output_value"}}
-	outputStr := string(output)
-	if outputStr == "{}\n" || outputStr == "{}" {
-		return outputs, nil
+	// Parse JSON output properly
+	// Format: {"output_name": {"value": "output_value", "type": "string", "sensitive": false}}
+	var rawOutputs map[string]struct {
+		Value     interface{} `json:"value"`
+		Type      string      `json:"type"`
+		Sensitive bool        `json:"sensitive"`
 	}
 
-	// Extract outputs using simple string parsing
-	// This is a simplified approach - in production, use encoding/json
-	lines := strings.Split(outputStr, "\n")
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if strings.Contains(line, "\"value\":") {
-			// Extract key-value pairs
-			parts := strings.Split(line, ":")
-			if len(parts) >= 2 {
-				key := strings.Trim(parts[0], " \"")
-				value := strings.Trim(parts[1], " \",")
-				if key != "value" && key != "type" && key != "sensitive" {
-					outputs[key] = value
-				}
-			}
+	if err := json.Unmarshal(output, &rawOutputs); err != nil {
+		return nil, fmt.Errorf("failed to parse terraform outputs: %w", err)
+	}
+
+	outputs := make(map[string]string, len(rawOutputs))
+	for key, val := range rawOutputs {
+		// Convert value to string
+		switch v := val.Value.(type) {
+		case string:
+			outputs[key] = v
+		case float64:
+			outputs[key] = fmt.Sprintf("%.0f", v)
+		case bool:
+			outputs[key] = fmt.Sprintf("%t", v)
+		default:
+			// For complex types (arrays, objects), marshal back to JSON
+			jsonBytes, _ := json.Marshal(v)
+			outputs[key] = string(jsonBytes)
 		}
 	}
 

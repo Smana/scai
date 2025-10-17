@@ -8,18 +8,18 @@ import (
 
 // DeploymentConfig holds parsed configuration from natural language
 type DeploymentConfig struct {
-	Strategy              string
-	Region                string
-	EC2InstanceType       string
-	EC2VolumeSize         int
-	LambdaMemory          int
-	LambdaTimeout         int
-	EKSNodeType           string
-	EKSMinNodes           int
-	EKSMaxNodes           int
-	EKSDesiredNodes       int
-	EKSNodeVolumeSize     int
-	CleanedPrompt         string // Prompt with config keywords removed
+	Strategy          string
+	Region            string
+	EC2InstanceType   string
+	EC2VolumeSize     int
+	LambdaMemory      int
+	LambdaTimeout     int
+	EKSNodeType       string
+	EKSMinNodes       int
+	EKSMaxNodes       int
+	EKSDesiredNodes   int
+	EKSNodeVolumeSize int
+	CleanedPrompt     string // Prompt with config keywords removed
 }
 
 // ParsePrompt extracts deployment configuration from natural language prompt
@@ -109,18 +109,18 @@ func extractEKSNodeType(prompt string) string {
 }
 
 // extractNodeCounts extracts min/max/desired node counts for EKS
-func extractNodeCounts(prompt string) (min, max, desired int) {
+func extractNodeCounts(prompt string) (minNodes, maxNodes, desiredNodes int) {
 	// Pattern: "3 nodes", "5 instances", "between 2 and 5 nodes", "min 1 max 3"
 
 	// Simple pattern: "N nodes" or "N instances"
-	re := regexp.MustCompile(`\b(\d+)\s+(?:node[s]?|instance[s]?)\b`)
+	re := regexp.MustCompile(`\b(\d+)\s+(?:nodes?|instances?)\b`)
 	if matches := re.FindStringSubmatch(prompt); len(matches) > 1 {
 		count, _ := strconv.Atoi(matches[1])
 		return count, count, count // Same for all if single number
 	}
 
 	// Range pattern: "between X and Y nodes"
-	re = regexp.MustCompile(`\bbetween\s+(\d+)\s+and\s+(\d+)\s+(?:node[s]?|instance[s]?)\b`)
+	re = regexp.MustCompile(`\bbetween\s+(\d+)\s+and\s+(\d+)\s+(?:nodes?|instances?)\b`)
 	if matches := re.FindStringSubmatch(prompt); len(matches) > 2 {
 		minVal, _ := strconv.Atoi(matches[1])
 		maxVal, _ := strconv.Atoi(matches[2])
@@ -133,24 +133,24 @@ func extractNodeCounts(prompt string) (min, max, desired int) {
 	reMax := regexp.MustCompile(`\bmax(?:imum)?\s+(\d+)\b`)
 
 	if matches := reMin.FindStringSubmatch(prompt); len(matches) > 1 {
-		min, _ = strconv.Atoi(matches[1])
+		minNodes, _ = strconv.Atoi(matches[1])
 	}
 
 	if matches := reMax.FindStringSubmatch(prompt); len(matches) > 1 {
-		max, _ = strconv.Atoi(matches[1])
+		maxNodes, _ = strconv.Atoi(matches[1])
 	}
 
-	if min > 0 && max > 0 {
-		desired = (min + max) / 2
-	} else if min > 0 {
-		desired = min
-		max = min
-	} else if max > 0 {
-		desired = max
-		min = max
+	if minNodes > 0 && maxNodes > 0 {
+		desiredNodes = (minNodes + maxNodes) / 2
+	} else if minNodes > 0 {
+		desiredNodes = minNodes
+		maxNodes = minNodes
+	} else if maxNodes > 0 {
+		desiredNodes = maxNodes
+		minNodes = maxNodes
 	}
 
-	return min, max, desired
+	return minNodes, maxNodes, desiredNodes
 }
 
 // extractLambdaMemory extracts Lambda memory in MB
@@ -196,8 +196,8 @@ func extractTimeout(prompt string) int {
 	// Minutes pattern
 	re = regexp.MustCompile(`\b(?:timeout\s+)?(\d+)\s*(?:minutes?|mins?|m)\b`)
 	if matches := re.FindStringSubmatch(prompt); len(matches) > 1 {
-		min, _ := strconv.Atoi(matches[1])
-		return min * 60 // Convert to seconds
+		minutes, _ := strconv.Atoi(matches[1])
+		return minutes * 60 // Convert to seconds
 	}
 
 	return 0
@@ -227,8 +227,8 @@ func cleanPrompt(originalPrompt string, config *DeploymentConfig) string {
 	}
 
 	// Remove node count phrases
-	cleaned = regexp.MustCompile(`\b\d+\s+(?:node[s]?|instance[s]?)\b`).ReplaceAllString(cleaned, "")
-	cleaned = regexp.MustCompile(`\bbetween\s+\d+\s+and\s+\d+\s+(?:node[s]?|instance[s]?)\b`).ReplaceAllString(cleaned, "")
+	cleaned = regexp.MustCompile(`\b\d+\s+(?:nodes?|instances?)\b`).ReplaceAllString(cleaned, "")
+	cleaned = regexp.MustCompile(`\bbetween\s+\d+\s+and\s+\d+\s+(?:nodes?|instances?)\b`).ReplaceAllString(cleaned, "")
 	cleaned = regexp.MustCompile(`\bmin(?:imum)?\s+\d+\b`).ReplaceAllString(cleaned, "")
 	cleaned = regexp.MustCompile(`\bmax(?:imum)?\s+\d+\b`).ReplaceAllString(cleaned, "")
 

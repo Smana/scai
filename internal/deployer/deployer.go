@@ -106,7 +106,10 @@ func (d *Deployer) Deploy() (*types.DeploymentResult, error) {
 		fmt.Printf("   Running Terraform...\n")
 	}
 
-	executor := terraform.NewExecutor(tfDir, d.config.TerraformBin, d.config.Verbose)
+	executor, err := terraform.NewExecutor(tfDir, d.config.TerraformBin, d.config.Verbose)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create terraform executor: %w", err)
+	}
 
 	if err := executor.Init(); err != nil {
 		return nil, fmt.Errorf("terraform init failed: %w", err)
@@ -147,7 +150,7 @@ func (d *Deployer) extractAppName() string {
 	repoURL := d.config.Analysis.RepoURL
 
 	// Simple extraction logic
-	if len(repoURL) > 0 {
+	if repoURL != "" {
 		// Remove .git suffix if present
 		if len(repoURL) > 4 && repoURL[len(repoURL)-4:] == ".git" {
 			repoURL = repoURL[:len(repoURL)-4]

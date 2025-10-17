@@ -3,6 +3,8 @@ package llm
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -48,7 +50,7 @@ func StartOllamaContainer(verbose bool) error {
 			return fmt.Errorf("failed to start existing container: %w", err)
 		}
 	} else {
-		// Create new container
+		// Create new container with security options
 		if verbose {
 			fmt.Printf("Creating Ollama container...\n")
 		}
@@ -56,6 +58,9 @@ func StartOllamaContainer(verbose bool) error {
 			"--name", OllamaContainerName,
 			"-p", fmt.Sprintf("%s:%s", OllamaPort, OllamaPort),
 			"-v", "ollama-data:/root/.ollama",
+			"--security-opt", "no-new-privileges:true",
+			"--memory", "8g", // Limit memory to 8GB
+			"--cpus", "4.0", // Limit to 4 CPUs
 			OllamaImage,
 		)
 		if output, err := cmd.CombinedOutput(); err != nil {
@@ -110,8 +115,16 @@ func EnsureModelAvailable(model string, verbose bool) error {
 	}
 
 	pullCmd := exec.Command("docker", "exec", OllamaContainerName, "ollama", "pull", model)
-	pullCmd.Stdout = nil // Don't show pull progress
-	pullCmd.Stderr = nil
+
+	if verbose {
+		// Show progress to user
+		pullCmd.Stdout = os.Stdout
+		pullCmd.Stderr = os.Stderr
+	} else {
+		// Suppress progress
+		pullCmd.Stdout = nil
+		pullCmd.Stderr = nil
+	}
 
 	if err := pullCmd.Run(); err != nil {
 		return fmt.Errorf("failed to pull model %s: %w", model, err)
@@ -128,9 +141,19 @@ func IsOllamaAccessible(url string) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "curl", "-s", "-f", fmt.Sprintf("%s/api/version", url))
-	err := cmd.Run()
-	return err == nil
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/api/version", url), nil)
+	if err != nil {
+		return false
+	}
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+
+	return resp.StatusCode == http.StatusOK
 }
 
 // SetupOllamaDocker ensures Ollama Docker container is running with the required model

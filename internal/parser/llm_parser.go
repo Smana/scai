@@ -4,10 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/Smana/scia/internal/deployer"
 	"github.com/Smana/scia/internal/llm"
+)
+
+const (
+	maxLLMResponseSize = 10 * 1024 // 10KB max response
 )
 
 // ConfigExtractionPrompt is the template for extracting deployment config from natural language
@@ -109,6 +114,12 @@ func ParseConfigFromPrompt(llmClient *llm.Client, userPrompt string) (*Deploymen
 	if err != nil {
 		// If LLM fails, return empty config
 		return &DeploymentConfig{CleanedPrompt: userPrompt}, nil
+	}
+
+	// Validate response size before parsing
+	if len(resp.Text) > maxLLMResponseSize {
+		log.Printf("Warning: LLM response exceeds max size (%d bytes), truncating", len(resp.Text))
+		resp.Text = resp.Text[:maxLLMResponseSize]
 	}
 
 	// Parse JSON response
@@ -243,10 +254,18 @@ func extractJSON(text string) string {
 	end := strings.LastIndex(text, "}")
 
 	if start == -1 || end == -1 || start >= end {
-		return text
+		return "{}" // Return empty JSON instead of raw text
 	}
 
-	return text[start : end+1]
+	extracted := text[start : end+1]
+
+	// Validate it's parseable JSON
+	var test interface{}
+	if err := json.Unmarshal([]byte(extracted), &test); err != nil {
+		return "{}" // Return empty JSON on parse failure
+	}
+
+	return extracted
 }
 
 // ApplyConfig applies parsed configuration to deployer config

@@ -5,6 +5,7 @@ go 1.25
 require (
 	github.com/go-git/go-git/v5 v5.16.3
 	github.com/ollama/ollama v0.12.5
+	github.com/pterm/pterm v0.12.82
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
 )
@@ -36,7 +37,6 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
 	github.com/pjbgf/sha1cd v0.3.2 // indirect
-	github.com/pterm/pterm v0.12.82 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect

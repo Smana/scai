@@ -334,8 +334,8 @@ func extractAppName(repoSource string) string {
 }
 
 // ensureOllamaAvailable ensures Ollama is running and accessible
-func ensureOllamaAvailable(verbose bool) (string, string, error) {
-	model := viper.GetString("ollama.model")
+func ensureOllamaAvailable(verbose bool) (url string, model string, err error) {
+	model = viper.GetString("ollama.model")
 	configuredURL := viper.GetString("ollama.url")
 	useDocker := viper.GetBool("ollama.use_docker")
 
@@ -364,7 +364,7 @@ Or remove the configuration to use Docker.`, configuredURL)
 			fmt.Println("🐳 Checking Docker Ollama...")
 		}
 
-		url, err := llm.SetupOllamaDocker(model, verbose)
+		url, err = llm.SetupOllamaDocker(model, verbose)
 		if err == nil {
 			if verbose {
 				fmt.Println()
