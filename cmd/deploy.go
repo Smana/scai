@@ -5,13 +5,14 @@ import (
 	"os"
 	"strings"
 
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+
 	"github.com/Smana/scia/internal/analyzer"
 	"github.com/Smana/scia/internal/deployer"
 	"github.com/Smana/scia/internal/llm"
 	"github.com/Smana/scia/internal/parser"
 	"github.com/Smana/scia/internal/ui"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 const (

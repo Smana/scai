@@ -3,11 +3,12 @@ package ui
 import (
 	"fmt"
 
+	"github.com/pterm/pterm"
+
 	"github.com/Smana/scia/internal/deployer"
 	"github.com/Smana/scia/internal/llm"
 	"github.com/Smana/scia/internal/parser"
 	"github.com/Smana/scia/internal/types"
-	"github.com/pterm/pterm"
 )
 
 // ConfirmOrModify shows the plan and allows confirmation or modification
