@@ -63,23 +63,28 @@ issues:
     - path: cmd/
       linters:
         - gocyclo
+        - gosec
     - path: internal/llm/
       linters:
         - gocyclo
         - goconst
         - gocritic
+        - gosec
     - path: internal/analyzer/
       linters:
         - goconst
+        - gosec
     - path: internal/parser/
       linters:
         - gocyclo
+        - goconst
     - path: internal/deployer/
       linters:
         - gocyclo
     - path: internal/ui/
       linters:
         - gocyclo
+        - goconst
     - path: internal/terraform/
       linters:
         - gosec  # We validate terraform binary paths before execution

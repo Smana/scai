@@ -10,14 +10,17 @@ import (
 )
 
 const (
-	langPython      = "python"
-	langJavaScript  = "javascript"
-	runtimePython   = "python3.12"
-	imageNode       = "node:20-alpine"
-	frameworkFlask  = "flask"
-	frameworkDjango = "django"
+	langPython       = "python"
+	langJavaScript   = "javascript"
+	langTypeScript   = "typescript"
+	runtimePython    = "python3.12"
+	imageNode        = "node:20-alpine"
+	imagePython      = "python:3.12-slim"
+	frameworkFlask   = "flask"
+	frameworkDjango  = "django"
 	frameworkFastAPI = "fastapi"
-	handlerApp      = "app.handler"
+	frameworkExpress = "express"
+	handlerApp       = "app.handler"
 )
 
 // Generator handles Terraform configuration generation
@@ -791,7 +794,7 @@ func (g *Generator) detectRuntime(language, framework string) string {
 	switch language {
 	case langPython:
 		return runtimePython
-	case langJavaScript, "typescript":
+	case langJavaScript, langTypeScript:
 		return "nodejs20.x"
 	case "go":
 		return "provided.al2023"
@@ -809,7 +812,7 @@ func (g *Generator) detectHandler(framework string) string {
 		return "wsgi.handler"
 	case frameworkFastAPI:
 		return "main.handler"
-	case "express":
+	case frameworkExpress:
 		return "index.handler"
 	default:
 		return handlerApp
@@ -821,15 +824,15 @@ func (g *Generator) detectContainerImage(language, framework string) string {
 	switch language {
 	case langPython:
 		if framework == frameworkFlask {
-			return "python:3.12-slim"
+			return imagePython
 		} else if framework == frameworkDjango {
-			return "python:3.12-slim"
+			return imagePython
 		} else if framework == frameworkFastAPI {
-			return "python:3.12-slim"
+			return imagePython
 		}
-		return "python:3.12-slim"
-	case langJavaScript, "typescript":
-		if framework == "express" {
+		return imagePython
+	case langJavaScript, langTypeScript:
+		if framework == frameworkExpress {
 			return imageNode
 		} else if framework == "nextjs" || framework == "next.js" {
 			return imageNode
