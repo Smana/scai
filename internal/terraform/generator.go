@@ -10,10 +10,14 @@ import (
 )
 
 const (
-	langPython     = "python"
-	langJavaScript = "javascript"
-	runtimePython  = "python3.12"
-	imageNode      = "node:20-alpine"
+	langPython      = "python"
+	langJavaScript  = "javascript"
+	runtimePython   = "python3.12"
+	imageNode       = "node:20-alpine"
+	frameworkFlask  = "flask"
+	frameworkDjango = "django"
+	frameworkFastAPI = "fastapi"
+	handlerApp      = "app.handler"
 )
 
 // Generator handles Terraform configuration generation
@@ -799,16 +803,16 @@ func (g *Generator) detectRuntime(language, framework string) string {
 // detectHandler determines the Lambda handler from framework
 func (g *Generator) detectHandler(framework string) string {
 	switch framework {
-	case "flask":
-		return "app.handler"
-	case "django":
+	case frameworkFlask:
+		return handlerApp
+	case frameworkDjango:
 		return "wsgi.handler"
-	case "fastapi":
+	case frameworkFastAPI:
 		return "main.handler"
 	case "express":
 		return "index.handler"
 	default:
-		return "app.handler"
+		return handlerApp
 	}
 }
 
@@ -816,11 +820,11 @@ func (g *Generator) detectHandler(framework string) string {
 func (g *Generator) detectContainerImage(language, framework string) string {
 	switch language {
 	case langPython:
-		if framework == "flask" {
+		if framework == frameworkFlask {
 			return "python:3.12-slim"
-		} else if framework == "django" {
+		} else if framework == frameworkDjango {
 			return "python:3.12-slim"
-		} else if framework == "fastapi" {
+		} else if framework == frameworkFastAPI {
 			return "python:3.12-slim"
 		}
 		return "python:3.12-slim"
