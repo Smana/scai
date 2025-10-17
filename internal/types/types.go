@@ -17,21 +17,45 @@ type Analysis struct {
 
 // TerraformConfig represents generated Terraform configuration
 type TerraformConfig struct {
-	Path      string
-	Directory string
-	Strategy  string
+	Path         string
+	Directory    string
+	Strategy     string
+	AppName      string
+	Region       string
+	Framework    string
+	Language     string
+	Port         int
+	RepoURL      string
+	StartCommand string
+	EnvVars      map[string]string
+
+	// EC2 sizing
+	InstanceType string
+	VolumeSize   int
+
+	// Lambda sizing
+	LambdaMemory              int
+	LambdaTimeout             int
+	LambdaReservedConcurrency int
+
+	// EKS sizing
+	EKSNodeType       string
+	EKSMinNodes       int
+	EKSMaxNodes       int
+	EKSDesiredNodes   int
+	EKSNodeVolumeSize int
 }
 
 // DeploymentResult represents deployment outcome
 type DeploymentResult struct {
-	Status       string
-	PublicIP     string
-	PublicURL    string
-	TerraformDir string
-	Logs         []string
-	Strategy     string
-	Warnings     []string
-	Suggestions  []string
+	Status        string
+	Strategy      string
+	Region        string
+	Outputs       map[string]string
+	TerraformDir  string
+	Logs          []string
+	Warnings      []string
+	Optimizations []string
 }
 
 // DeploymentRule represents a heuristic decision rule

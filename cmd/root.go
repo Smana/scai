@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -78,8 +79,11 @@ func initConfig() {
 	}
 
 	// Read environment variables with SCIA_ prefix
+	// e.g., SCIA_OLLAMA_URL=http://remote:11434
 	viper.SetEnvPrefix("SCIA")
 	viper.AutomaticEnv()
+	// Replace dots with underscores for env vars (ollama.url -> SCIA_OLLAMA_URL)
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	// Read config file if exists
 	if err := viper.ReadInConfig(); err == nil {
@@ -91,6 +95,7 @@ func initConfig() {
 	// Set defaults
 	viper.SetDefault("ollama.url", "http://localhost:11434")
 	viper.SetDefault("ollama.model", "qwen2.5-coder:7b")
-	viper.SetDefault("aws.region", "us-east-1")
+	viper.SetDefault("ollama.use_docker", true) // Prefer Docker by default
+	viper.SetDefault("aws.region", "eu-west-3")
 	viper.SetDefault("terraform.bin", "tofu")
 }
