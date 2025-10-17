@@ -1,0 +1,34 @@
+# Changelog
+
+## [0.2.0](https://github.com/Smana/scia/compare/v0.1.0...v0.2.0) (2025-10-17)
+
+
+### Features
+
+* add Ollama LLM integration with Docker support and natural language parsing ([617e29c](https://github.com/Smana/scia/commit/617e29ce951345417bd56ff47ee809bac9ab6e4c))
+* Add Ollama LLM integration with Docker support and natural language parsing ([a81ec4a](https://github.com/Smana/scia/commit/a81ec4a0e53d6f21e8a9cacfebbbd05e4cbeaa27))
+* **ci:** first version of CI using dagger taskfile goreleaser ([aa44acd](https://github.com/Smana/scia/commit/aa44acd954f9f56c9c2f3bfb62c754f857e81703))
+* initial commit ([5839026](https://github.com/Smana/scia/commit/583902656162630a774468398e7e45b0711be2a9))
+* upgrade golang version to v1.25 ([33160ed](https://github.com/Smana/scia/commit/33160ed7f80791552a67abb9506a726263e77ff4))
+
+
+### Bug Fixes
+
+* add framework handler constants to resolve goconst warnings ([236b7a1](https://github.com/Smana/scia/commit/236b7a1db57881d4da82f0402c26b22bb942674a))
+* **ci:** simplify commitlint config to resolve validation errors ([093770a](https://github.com/Smana/scia/commit/093770a6c570e7cecac65cff6f59715ff66d3deb))
+* correct goimports formatting for import groups ([548821d](https://github.com/Smana/scia/commit/548821d4feb8427663933216b41a1c83368cd600))
+* improve LLM instance type detection to preserve exact specifications ([e235031](https://github.com/Smana/scia/commit/e23503175ca678737a884fbae7b752d879437793))
+* resolve errcheck and goconst lint errors ([6d1f626](https://github.com/Smana/scia/commit/6d1f62619bc51a8c61db5df8d897d2c2ca4fbeb7))
+* resolve lint errors (goconst, gocyclo, gosec, octal literals) ([8c16e8d](https://github.com/Smana/scia/commit/8c16e8dd3e1584aa2904262ea4b9acffe2d8afd9))
+* resolve remaining lint errors (goconst, gosec, formatting) ([474d033](https://github.com/Smana/scia/commit/474d0336af0e6c43ea11704d882f92f1c4e5e0d3))
+
+
+### Documentation
+
+* add security policy and handle Ollama CVEs ([599096b](https://github.com/Smana/scia/commit/599096b194abb29494d527b64776bbae8d6eead9))
+* drastically simplify README for better usability ([25d9556](https://github.com/Smana/scia/commit/25d9556dce86572ce6afe9beaea85ee213d7fd64))
+
+
+### Code Refactoring
+
+* apply security, code quality, and linting improvements ([c49d499](https://github.com/Smana/scia/commit/c49d499da91550834821960e8cd8145e6872109a))
