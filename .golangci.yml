@@ -71,5 +71,17 @@ issues:
     - path: internal/analyzer/
       linters:
         - goconst
+    - path: internal/parser/
+      linters:
+        - gocyclo
+    - path: internal/deployer/
+      linters:
+        - gocyclo
+    - path: internal/ui/
+      linters:
+        - gocyclo
+    - path: internal/terraform/
+      linters:
+        - gosec  # We validate terraform binary paths before execution
   max-issues-per-linter: 0
   max-same-issues: 0

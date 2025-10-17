@@ -14,6 +14,10 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	defaultOllamaURL = "http://localhost:11434"
+)
+
 var deployCmd = &cobra.Command{
 	Use:   "deploy [prompt] [repository_url_or_zip]",
 	Short: "Deploy an application to AWS",
@@ -122,7 +126,7 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create work directory
-	if err := os.MkdirAll(workDir, 0755); err != nil {
+	if err := os.MkdirAll(workDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create work directory: %w", err)
 	}
 
@@ -340,7 +344,7 @@ func ensureOllamaAvailable(verbose bool) (url string, model string, err error) {
 	useDocker := viper.GetBool("ollama.use_docker")
 
 	// Priority 1: Check if remote/configured URL is accessible
-	if configuredURL != "http://localhost:11434" {
+	if configuredURL != defaultOllamaURL {
 		if verbose {
 			fmt.Printf("🔍 Checking remote Ollama at %s...\n", configuredURL)
 		}
@@ -381,11 +385,11 @@ Or remove the configuration to use Docker.`, configuredURL)
 	if verbose {
 		fmt.Println("🔍 Checking local Ollama...")
 	}
-	if llm.IsOllamaAccessible("http://localhost:11434") {
+	if llm.IsOllamaAccessible(defaultOllamaURL) {
 		if verbose {
 			fmt.Printf("✓ Connected to local Ollama\n\n")
 		}
-		return "http://localhost:11434", model, nil
+		return defaultOllamaURL, model, nil
 	}
 
 	// All options failed - return helpful error

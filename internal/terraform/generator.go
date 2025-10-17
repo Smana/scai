@@ -26,7 +26,7 @@ func NewGenerator(outputDir string, verbose bool) *Generator {
 // Generate creates Terraform configuration based on the strategy
 func (g *Generator) Generate(config *types.TerraformConfig) error {
 	// Create output directory
-	if err := os.MkdirAll(g.outputDir, 0755); err != nil {
+	if err := os.MkdirAll(g.outputDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
@@ -235,7 +235,7 @@ output "application_url" {
 		config.Port,         // application URL port
 	)
 
-	return os.WriteFile(filepath.Join(g.outputDir, "main.tf"), []byte(mainTF), 0644)
+	return os.WriteFile(filepath.Join(g.outputDir, "main.tf"), []byte(mainTF), 0o644)
 }
 
 // generateUserData creates the user-data script for EC2 instances
@@ -575,7 +575,7 @@ output "kubeconfig_command" {
 		config.Region,            // kubeconfig command region
 	)
 
-	return os.WriteFile(filepath.Join(g.outputDir, "main.tf"), []byte(mainTF), 0644)
+	return os.WriteFile(filepath.Join(g.outputDir, "main.tf"), []byte(mainTF), 0o644)
 }
 
 // generateLambdaConfig generates Lambda configuration using terraform-aws-modules/lambda
@@ -772,7 +772,7 @@ output "api_invoke_url" {
 		config.Language,      // case statement
 	)
 
-	return os.WriteFile(filepath.Join(g.outputDir, "main.tf"), []byte(mainTF), 0644)
+	return os.WriteFile(filepath.Join(g.outputDir, "main.tf"), []byte(mainTF), 0o644)
 }
 
 // detectRuntime determines the Lambda runtime from language and framework
