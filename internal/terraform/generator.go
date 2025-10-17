@@ -9,6 +9,13 @@ import (
 	"github.com/Smana/scia/internal/types"
 )
 
+const (
+	langPython     = "python"
+	langJavaScript = "javascript"
+	runtimePython  = "python3.12"
+	imageNode      = "node:20-alpine"
+)
+
 // Generator handles Terraform configuration generation
 type Generator struct {
 	outputDir string
@@ -778,14 +785,14 @@ output "api_invoke_url" {
 // detectRuntime determines the Lambda runtime from language and framework
 func (g *Generator) detectRuntime(language, framework string) string {
 	switch language {
-	case "python":
-		return "python3.12"
-	case "javascript", "typescript":
+	case langPython:
+		return runtimePython
+	case langJavaScript, "typescript":
 		return "nodejs20.x"
 	case "go":
 		return "provided.al2023"
 	default:
-		return "python3.12" // Default fallback
+		return runtimePython // Default fallback
 	}
 }
 
@@ -808,7 +815,7 @@ func (g *Generator) detectHandler(framework string) string {
 // detectContainerImage determines the container image for EKS deployment
 func (g *Generator) detectContainerImage(language, framework string) string {
 	switch language {
-	case "python":
+	case langPython:
 		if framework == "flask" {
 			return "python:3.12-slim"
 		} else if framework == "django" {
@@ -817,13 +824,13 @@ func (g *Generator) detectContainerImage(language, framework string) string {
 			return "python:3.12-slim"
 		}
 		return "python:3.12-slim"
-	case "javascript", "typescript":
+	case langJavaScript, "typescript":
 		if framework == "express" {
-			return "node:20-alpine"
+			return imageNode
 		} else if framework == "nextjs" || framework == "next.js" {
-			return "node:20-alpine"
+			return imageNode
 		}
-		return "node:20-alpine"
+		return imageNode
 	case "go":
 		return "golang:1.23-alpine"
 	default:
