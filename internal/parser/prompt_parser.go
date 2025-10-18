@@ -22,6 +22,21 @@ type DeploymentConfig struct {
 	CleanedPrompt     string // Prompt with config keywords removed
 }
 
+// hasAnyConfig returns true if any configuration values were extracted
+func (c *DeploymentConfig) hasAnyConfig() bool {
+	return c.Strategy != "" ||
+		c.Region != "" ||
+		c.EC2InstanceType != "" ||
+		c.EC2VolumeSize > 0 ||
+		c.LambdaMemory > 0 ||
+		c.LambdaTimeout > 0 ||
+		c.EKSNodeType != "" ||
+		c.EKSMinNodes > 0 ||
+		c.EKSMaxNodes > 0 ||
+		c.EKSDesiredNodes > 0 ||
+		c.EKSNodeVolumeSize > 0
+}
+
 // ParsePrompt extracts deployment configuration from natural language prompt
 func ParsePrompt(prompt string) *DeploymentConfig {
 	config := &DeploymentConfig{

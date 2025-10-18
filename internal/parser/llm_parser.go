@@ -164,20 +164,18 @@ func ParseConfigFromPrompt(llmClient *llm.Client, userPrompt string) (*Deploymen
 		resp.Text = resp.Text[:maxLLMResponseSize]
 	}
 
-	// Log the LLM response for debugging
-	log.Printf("LLM initial config response: %s", resp.Text)
-
 	// Parse JSON response
 	config, err := parseConfigJSON(resp.Text)
 	if err != nil {
-		// If parsing fails, return empty config
-		log.Printf("Warning: Failed to parse LLM response as JSON: %v", err)
+		// If parsing fails, return empty config (silently)
 		return &DeploymentConfig{CleanedPrompt: userPrompt}, nil
 	}
 
-	// Log what was extracted
-	log.Printf("Extracted initial config - EC2 Instance: %s, Volume: %dGB, Strategy: %s, Region: %s",
-		config.EC2InstanceType, config.EC2VolumeSize, config.Strategy, config.Region)
+	// Only log if we actually extracted something useful
+	if config.hasAnyConfig() {
+		log.Printf("Extracted config from prompt - EC2: %s, Volume: %dGB, Strategy: %s, Region: %s",
+			config.EC2InstanceType, config.EC2VolumeSize, config.Strategy, config.Region)
+	}
 
 	config.CleanedPrompt = userPrompt // Keep original prompt for context
 	return config, nil
