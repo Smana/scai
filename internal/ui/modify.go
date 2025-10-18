@@ -44,25 +44,22 @@ func ConfirmOrModify(plan *DeploymentPlan, analysis *types.Analysis, config *dep
 			return false, config, fmt.Errorf("failed to read input: %w", err)
 		}
 
-		userInput = pterm.FgLightWhite.Sprint(userInput)
-		response := pterm.FgCyan.Sprint(userInput)
-
-		// Check for yes/no
-		if response == "yes" || response == "y" {
+		// Check for yes/no BEFORE adding color codes
+		if userInput == "yes" || userInput == "y" {
 			pterm.Success.Println("✓ Deployment confirmed")
 			return true, config, nil
 		}
 
-		if response == "no" || response == "n" {
+		if userInput == "no" || userInput == "n" {
 			return false, config, nil
 		}
 
 		// User wants to modify - use LLM to understand the request
-		pterm.Info.Printf("Processing modification request: %s\n", response)
+		pterm.Info.Printf("Processing modification request: %s\n", userInput)
 		pterm.Println()
 
 		// Use LLM to parse modification
-		modifiedConfig, err := parser.ModifyPlanWithNaturalLanguage(llmClient, config, response)
+		modifiedConfig, err := parser.ModifyPlanWithNaturalLanguage(llmClient, config, userInput)
 		if err != nil {
 			pterm.Warning.Printf("Could not understand modification: %v\n", err)
 			pterm.Warning.Println("Please try rephrasing or use specific values")

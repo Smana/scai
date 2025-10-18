@@ -56,6 +56,15 @@ func NewClientWithConfig(config *ProviderConfig, verbose bool) (*Client, error) 
 	}, nil
 }
 
+// NewClientWithManager creates a client from an existing ProviderManager
+// This allows reusing a pre-configured ProviderManager (e.g., from initializeLLMProvider)
+func NewClientWithManager(pm *ProviderManager, config *ProviderConfig) *Client {
+	return &Client{
+		providerManager: pm,
+		config:          config,
+	}
+}
+
 // DetermineStrategy uses LLM with comprehensive context to determine deployment strategy
 // Supports multiple providers with automatic fallback
 func (c *Client) DetermineStrategy(userPrompt string, analysis *types.Analysis) (string, error) {

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -16,7 +17,11 @@ import (
 )
 
 const (
-	defaultOllamaURL = "http://localhost:11434"
+	defaultOllamaURL   = "http://localhost:11434"
+	providerTypeOllama = "ollama"
+	providerTypeGemini = "gemini"
+	providerTypeOpenAI = "openai"
+	defaultAWSRegion   = "eu-west-3"
 )
 
 var deployCmd = &cobra.Command{
@@ -43,7 +48,7 @@ func init() {
 
 	// EC2 sizing parameters
 	deployCmd.Flags().String("ec2-instance-type", "", "EC2 instance type (default: t3.micro)")
-	deployCmd.Flags().Int("ec2-volume-size", 20, "EC2 root volume size in GB")
+	deployCmd.Flags().Int("ec2-volume-size", 30, "EC2 root volume size in GB")
 
 	// Lambda sizing parameters
 	deployCmd.Flags().Int("lambda-memory", 512, "Lambda memory in MB (128-10240)")
@@ -55,7 +60,7 @@ func init() {
 	deployCmd.Flags().Int("eks-min-nodes", 1, "EKS minimum number of nodes")
 	deployCmd.Flags().Int("eks-max-nodes", 3, "EKS maximum number of nodes")
 	deployCmd.Flags().Int("eks-desired-nodes", 2, "EKS desired number of nodes")
-	deployCmd.Flags().Int("eks-node-volume-size", 20, "EKS node volume size in GB")
+	deployCmd.Flags().Int("eks-node-volume-size", 30, "EKS node volume size in GB")
 }
 
 func runDeploy(cmd *cobra.Command, args []string) error {
@@ -65,14 +70,14 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 	// Get configuration
 	verbose := viper.GetBool("verbose")
 
-	// Ensure Ollama is available before proceeding
-	ollamaURL, ollamaModel, err := ensureOllamaAvailable(verbose)
+	// Initialize LLM provider
+	providerManager, providerConfig, err := initializeLLMProvider(verbose)
 	if err != nil {
 		return err
 	}
 
-	// Initialize LLM client for config parsing
-	llmClient := llm.NewClient(ollamaURL, ollamaModel)
+	// Create LLM client from the configured provider manager
+	llmClient := llm.NewClientWithManager(providerManager, providerConfig)
 
 	// Parse natural language prompt for configuration using LLM
 	var parsedConfig *parser.DeploymentConfig
@@ -103,7 +108,7 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 
 	// Get remaining configuration
 	workDir := viper.GetString("workdir")
-	awsRegion := viper.GetString("aws.region")
+	awsRegion := viper.GetString("cloud.default_region")
 	tfBin := viper.GetString("terraform.bin")
 
 	// Override with parsed config (natural language takes precedence)
@@ -266,7 +271,8 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 
 	deployConfig := planConfig
 
-	d := deployer.NewDeployer(deployConfig)
+	d := deployer.NewDeployer(deployConfig, globalStore)
+	d.SetLLMClient(llmClient)
 	result, err := d.Deploy()
 	if err != nil {
 		return fmt.Errorf("deployment failed: %w", err)
@@ -338,78 +344,108 @@ func extractAppName(repoSource string) string {
 	return "scia-app"
 }
 
-// ensureOllamaAvailable ensures Ollama is running and accessible
-func ensureOllamaAvailable(verbose bool) (url string, model string, err error) {
-	model = viper.GetString("ollama.model")
-	configuredURL := viper.GetString("ollama.url")
-	useDocker := viper.GetBool("ollama.use_docker")
+// initializeLLMProvider initializes the LLM provider based on configuration
+// Returns the ProviderManager and its config for creating a Client
+func initializeLLMProvider(verbose bool) (*llm.ProviderManager, *llm.ProviderConfig, error) {
+	ctx := context.Background()
 
-	// Priority 1: Check if remote/configured URL is accessible
-	if configuredURL != defaultOllamaURL {
-		if verbose {
-			fmt.Printf("🔍 Checking remote Ollama at %s...\n", configuredURL)
-		}
-		if llm.IsOllamaAccessible(configuredURL) {
-			if verbose {
-				fmt.Printf("✓ Connected to remote Ollama\n\n")
-			}
-			return configuredURL, model, nil
-		}
-		return "", "", fmt.Errorf(`❌ Ollama not available at configured URL: %s
-
-Please ensure Ollama is running at the remote URL or update your configuration:
-  export SCIA_OLLAMA_URL=http://your-server:11434
-
-Or remove the configuration to use Docker.`, configuredURL)
+	// Get provider type from config
+	providerType := viper.GetString("llm.provider")
+	if providerType == "" {
+		providerType = providerTypeOllama // Default to ollama for backward compatibility
 	}
 
-	// Priority 2: Try Docker (if enabled)
-	if useDocker && llm.IsDockerAvailable() {
-		if verbose {
-			fmt.Println("🐳 Checking Docker Ollama...")
-		}
+	// Build provider config
+	providerConfig := &llm.ProviderConfig{
+		Type: providerType,
 
-		url, err = llm.SetupOllamaDocker(model, verbose)
-		if err == nil {
+		// Ollama configuration
+		OllamaURL:   viper.GetString("llm.ollama.url"),
+		OllamaModel: viper.GetString("llm.ollama.model"),
+
+		// Gemini configuration
+		GeminiAPIKey: viper.GetString("llm.gemini.api_key"),
+		GeminiModel:  viper.GetString("llm.gemini.model"),
+
+		// OpenAI configuration
+		OpenAIAPIKey: viper.GetString("llm.openai.api_key"),
+		OpenAIModel:  viper.GetString("llm.openai.model"),
+	}
+
+	// Special handling for Ollama - ensure it's available
+	if providerType == providerTypeOllama {
+		useDocker := viper.GetBool("llm.ollama.use_docker")
+		configuredURL := providerConfig.OllamaURL
+
+		// Priority 1: Check if remote/configured URL is accessible
+		if configuredURL != defaultOllamaURL {
 			if verbose {
-				fmt.Println()
+				fmt.Printf("🔍 Checking remote Ollama at %s...\n", configuredURL)
 			}
-			return url, model, nil
-		}
+			if llm.IsOllamaAccessible(configuredURL) {
+				if verbose {
+					fmt.Printf("✓ Connected to remote Ollama\n\n")
+				}
+			} else {
+				return nil, nil, fmt.Errorf(`❌ Ollama not available at configured URL: %s
 
-		if verbose {
-			fmt.Printf("Warning: Docker setup failed: %v\n", err)
+Please ensure Ollama is running or update your configuration with 'scia init'`, configuredURL)
+			}
+		} else {
+			// Priority 2: Try Docker (if enabled)
+			if useDocker && llm.IsDockerAvailable() {
+				if verbose {
+					fmt.Println("🐳 Checking Docker Ollama...")
+				}
+
+				url, err := llm.SetupOllamaDocker(providerConfig.OllamaModel, verbose)
+				if err == nil {
+					providerConfig.OllamaURL = url
+					if verbose {
+						fmt.Println()
+					}
+				} else if verbose {
+					fmt.Printf("Warning: Docker setup failed: %v\n", err)
+				}
+			} else if llm.IsOllamaAccessible(defaultOllamaURL) {
+				// Priority 3: Try localhost
+				if verbose {
+					fmt.Println("🔍 Checking local Ollama...")
+					fmt.Printf("✓ Connected to local Ollama\n\n")
+				}
+			} else {
+				return nil, nil, fmt.Errorf(`❌ Ollama LLM is not available!
+
+Run 'scia init' to configure an LLM provider, or start Ollama:
+  docker run -d --name scia-ollama -p 11434:11434 -v ollama-data:/root/.ollama ollama/ollama
+  docker exec scia-ollama ollama pull %s`, providerConfig.OllamaModel)
+			}
 		}
 	}
 
-	// Priority 3: Try localhost
+	// Create provider manager
+	providerManager, err := llm.NewProviderManager(providerConfig, verbose)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to initialize LLM provider: %w", err)
+	}
+
+	// Check if provider is available
+	bestProvider := providerManager.GetBestProvider(ctx)
+	if bestProvider == nil {
+		return nil, nil, fmt.Errorf(`❌ LLM provider '%s' is not available!
+
+No accessible LLM providers found. Run 'scia init' to configure a provider.`, providerType)
+	}
+
+	if !bestProvider.IsAvailable(ctx) {
+		return nil, nil, fmt.Errorf(`❌ LLM provider '%s' is not available!
+
+Run 'scia init' to configure a different LLM provider.`, providerType)
+	}
+
 	if verbose {
-		fmt.Println("🔍 Checking local Ollama...")
-	}
-	if llm.IsOllamaAccessible(defaultOllamaURL) {
-		if verbose {
-			fmt.Printf("✓ Connected to local Ollama\n\n")
-		}
-		return defaultOllamaURL, model, nil
+		fmt.Printf("✓ Using LLM provider: %s\n\n", providerType)
 	}
 
-	// All options failed - return helpful error
-	return "", "", fmt.Errorf(`❌ Ollama LLM is not available!
-
-SCIA requires Ollama for natural language parsing and deployment decisions.
-
-Options to fix:
-
-1. 🐳 Use Docker Ollama (recommended):
-   docker run -d --name scia-ollama -p 11434:11434 -v ollama-data:/root/.ollama ollama/ollama
-   docker exec scia-ollama ollama pull %s
-
-2. 🌐 Use remote Ollama server:
-   export SCIA_OLLAMA_URL=http://remote-server:11434
-
-3. 💻 Start Ollama locally:
-   ollama serve
-   ollama pull %s
-
-After starting Ollama, run your command again.`, model, model)
+	return providerManager, providerConfig, nil
 }

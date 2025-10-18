@@ -1,140 +1,89 @@
-name: Build and Push
+name: Release Binaries
 
 on:
-  push:
-    branches: [ main ]
-  workflow_run:
-    workflows: ["CI Validation"]
-    branches: [ main ]
-    types: [completed]
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      snapshot:
+        description: 'Create snapshot build (no release)'
+        required: false
+        default: 'false'
 
 env:
   GO_VERSION: "1.25"
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+
+permissions:
+  contents: write
+  packages: write
 
 jobs:
-  # Only run if CI validation succeeded or this is a direct push to main
-  check-ci:
-    name: Check CI Status
+  release-binaries:
+    name: Build and Release Binaries
     runs-on: ubuntu-latest
-    outputs:
-      proceed: ${{ steps.check.outputs.proceed }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Check if we should proceed
-        id: check
-        run: |
-          # Check if this is a release commit (skip if release-please is handling it)
-          if git log -1 --pretty=format:"%s" | grep -E "^(chore|release).*release"; then
-            echo "Release commit detected - skipping to avoid duplicate images"
-            echo "proceed=false" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.event_name }}" == "push" ]]; then
-            echo "Direct push to main - proceeding"
-            echo "proceed=true" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.event.workflow_run.conclusion }}" == "success" ]]; then
-            echo "CI validation succeeded - proceeding"
-            echo "proceed=true" >> $GITHUB_OUTPUT
-          else
-            echo "CI validation failed or not completed - skipping"
-            echo "proceed=false" >> $GITHUB_OUTPUT
-          fi
-
-  goreleaser-build:
-    name: Build and Push with GoReleaser
-    runs-on: ubuntu-latest
-    needs: [check-ci]
-    if: needs.check-ci.outputs.proceed == 'true'
-    permissions:
-      contents: read
-      packages: write
-      security-events: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # GoReleaser needs full git history
+          fetch-depth: 0  # Full git history for GoReleaser
 
-      - name: Log in to Container Registry
-        uses: docker/login-action@v3
+      - name: Install Task
+        uses: arduino/setup-task@v2
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build binaries and containers with GoReleaser
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Build binaries with GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
           version: '~> v2'
-          args: release --snapshot --clean --skip=validate
+          args: ${{ github.event.inputs.snapshot == 'true' && 'release --snapshot --clean' || 'release --clean' }}
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
           GITHUB_REPOSITORY_NAME: ${{ github.event.repository.name }}
-          DOCKER_BUILDKIT: 1
 
-      - name: Set commit short SHA for scanning
-        run: echo "COMMIT_SHORT=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
-
-      - name: Run Trivy vulnerability scanner on built image (AMD64)
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          image-ref: 'ghcr.io/smana/scia:${{ env.COMMIT_SHORT }}-amd64'
-          format: 'sarif'
-          output: 'trivy-results-amd64.sarif'
-          severity: 'HIGH,CRITICAL'
-          ignore-unfixed: true
-
-      - name: Run Trivy vulnerability scanner on built image (ARM64)
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          image-ref: 'ghcr.io/smana/scia:${{ env.COMMIT_SHORT }}-arm64'
-          format: 'sarif'
-          output: 'trivy-results-arm64.sarif'
-          severity: 'HIGH,CRITICAL'
-          ignore-unfixed: true
-
-      - name: Upload Trivy scan results to GitHub Security (AMD64)
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'trivy-results-amd64.sarif'
-          category: 'trivy-amd64'
-
-      - name: Upload Trivy scan results to GitHub Security (ARM64)
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'trivy-results-arm64.sarif'
-          category: 'trivy-arm64'
-
-
-      - name: Upload security scan results
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
-        if: always()
+        if: github.event.inputs.snapshot == 'true'
         with:
-          name: security-scan-results
-          path: |
-            trivy-results-amd64.sarif
-            trivy-results-arm64.sarif
-          retention-days: 30
+          name: binaries-snapshot
+          path: dist/
+          retention-days: 7
 
-
-  # Build summary for monitoring and debugging
-  build-summary:
-    name: Build Summary
+  # Build summary
+  release-summary:
+    name: Release Summary
     runs-on: ubuntu-latest
-    needs: [goreleaser-build]
+    needs: [release-binaries]
     if: always()
     steps:
-      - name: Create build summary
+      - name: Create release summary
         run: |
-          echo "## 🏗️ Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## 🎉 Release Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Status**: ${{ needs.goreleaser-build.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Commit**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Images Built**: AMD64 + ARM64" >> $GITHUB_STEP_SUMMARY
-          echo "**Security Scanned**: ✅" >> $GITHUB_STEP_SUMMARY
+          echo "**Status**: ${{ needs.release-binaries.result }}" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            echo "**Release**: ${{ github.event.release.tag_name }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Release URL**: ${{ github.event.release.html_url }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Type**: Snapshot build" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Binaries Built" >> $GITHUB_STEP_SUMMARY
+          echo "- Linux: amd64, arm64" >> $GITHUB_STEP_SUMMARY
+          echo "- macOS: amd64, arm64" >> $GITHUB_STEP_SUMMARY
+          echo "- Windows: amd64, arm64" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Build Method" >> $GITHUB_STEP_SUMMARY
+          echo "- GoReleaser with Taskfile (Dagger) integration" >> $GITHUB_STEP_SUMMARY

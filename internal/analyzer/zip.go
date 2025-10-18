@@ -21,20 +21,26 @@ func (a *Analyzer) AnalyzeFromZip(zipPath string) (*types.Analysis, error) {
 
 	// Use regular analysis on extracted directory
 	analysis := &types.Analysis{
-		RepoURL:  zipPath, // Store zip path as "URL"
-		RepoPath: repoPath,
+		RepoURL:   zipPath, // Store zip path as "URL"
+		RepoPath:  repoPath,
+		CommitSHA: "", // No commit SHA for ZIP files
 	}
 
-	// Detect framework
-	framework, err := a.detectFramework(repoPath)
+	// Detect framework and app directory
+	framework, appDir, err := a.detectFramework(repoPath)
 	if err != nil {
 		return nil, err
 	}
 	analysis.Framework = framework
+	analysis.AppDir = appDir
 
 	// Detect language
 	language := a.detectLanguage(repoPath)
 	analysis.Language = language
+
+	// Detect package manager
+	packageManager := a.detectPackageManager(repoPath, language)
+	analysis.PackageManager = packageManager
 
 	// Extract dependencies
 	deps, err := a.extractDependencies(repoPath, language)
@@ -43,12 +49,12 @@ func (a *Analyzer) AnalyzeFromZip(zipPath string) (*types.Analysis, error) {
 	}
 	analysis.Dependencies = deps
 
-	// Detect start command
-	startCmd := a.detectStartCommand(repoPath, framework)
+	// Detect start command (use app directory and package manager for accurate detection)
+	startCmd := a.detectStartCommand(repoPath, framework, appDir, packageManager)
 	analysis.StartCommand = startCmd
 
-	// Detect port
-	port := a.detectPort(repoPath, framework)
+	// Detect port (scan actual code files)
+	port := a.detectPort(repoPath, framework, appDir)
 	analysis.Port = port
 
 	// Extract environment variables

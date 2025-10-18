@@ -73,29 +73,22 @@ Based on Go conventions:
 
 ### 4. Generate Go-Focused PR Description
 
-Create a comprehensive description:
+Create a concise but informative description:
 
 ```markdown
-## 🔍 PR Type: [type]
-
-**Conventional Commit Type**: `[type]`
+## 🔍 Type: `[type]`
 
 ## 📝 Summary
 
-[2-3 sentences explaining WHAT changed and WHY. Use Go terminology: packages, interfaces, goroutines, channels, etc.]
+[1-2 sentences explaining WHAT changed and WHY]
 
-## 🎯 Changes Overview
+## 🎯 Key Changes
 
-### Core Changes
-- **[Package/Component]**: Brief description using Go idioms
-- **[Package/Component]**: Brief description
-- **[Package/Component]**: Brief description
+- **[Component]**: Brief description
+- **[Component]**: Brief description
+- **[Component]**: Brief description
 
-### Go-Specific Impacts
-- **New exported APIs**: [List if any]
-- **Breaking changes**: [List if any]
-- **Deprecated APIs**: [List if any]
-- **Performance**: [Impact on benchmarks]
+**Impacts**: [New APIs / Breaking changes / Performance changes if any]
 
 ## 📊 Go Architecture Diagram
 
@@ -121,9 +114,9 @@ flowchart TB
     interface -- "used by" --> impl
     impl -- "imports" --> ext
 
-    classDef new fill:#90EE90,stroke:#228B22,stroke-width:2px
-    classDef modified fill:#FFD700,stroke:#FF8C00,stroke-width:2px
-    classDef exported fill:#87CEEB,stroke:#4682B4,stroke-width:2px
+    classDef new fill:#4ADE80,stroke:#16A34A,stroke-width:3px
+    classDef modified fill:#FBBF24,stroke:#F59E0B,stroke-width:3px
+    classDef exported fill:#60A5FA,stroke:#2563EB,stroke-width:3px
 \```
 
 **Diagram Legend**:
@@ -132,273 +125,80 @@ flowchart TB
 - 🔵 Blue: Public APIs (exported)
 - ⚪ White: Existing unchanged code
 
-### Go Idioms Applied
+### Go Idioms Used
 
-- ✅ **Error handling**: Errors returned as values, not panics
-- ✅ **Concurrency**: Goroutines communicate via channels
-- ✅ **Zero values**: Types usable without explicit initialization
-- ✅ **Small interfaces**: Interfaces with 1-3 methods
-- ✅ **Accept interfaces, return structs**: Flexible APIs
-- ✅ **No "Get" prefix**: Follow Go getter conventions
+✅ Error handling • ✅ Concurrency • ✅ Small interfaces • ✅ Accept interfaces, return structs
 
-## 🗂️ File Changes Walkthrough
+## 🗂️ Files Changed
 
-| File | Type | LoC | Go Impact | Description |
-|------|------|-----|-----------|-------------|
-| `pkg/analyzer/analyzer.go` | Modified | +50/-30 | ✨ Exported | Added `Analyzer` struct with public methods |
-| `internal/helper/util.go` | Added | +120 | 🔒 Internal | Private utility functions |
-| `pkg/types/types.go` | Modified | +20/-5 | 💥 Breaking | Changed `Analysis` struct fields |
-| `go.mod` | Modified | +3/-2 | 📦 Deps | Updated dependencies |
+| File | Lines | Impact | Description |
+|------|-------|--------|-------------|
+| `pkg/analyzer/analyzer.go` | +50/-30 | ✨ API | Added `Analyzer` struct |
+| `internal/helper/util.go` | +120 | Internal | Private utilities |
+| `pkg/types/types.go` | +20/-5 | 💥 Breaking | Modified `Analysis` struct |
 
 <details>
-<summary><b>📄 Detailed File-by-File Analysis</b></summary>
+<summary><b>📄 Detailed Changes (expand if needed)</b></summary>
 
-### 📦 Package: `internal/analyzer`
+### `internal/analyzer/analyzer.go` (+50/-30)
+**Purpose**: Core repository analysis
 
-#### `internal/analyzer/analyzer.go` (+50/-30)
+**Changes**:
+- ✨ New `Analyzer` struct (exported type, unexported fields)
+- ✨ New constructor `NewAnalyzer(workDir, verbose)`
+- 🔧 Unexported `detectFramework` (was exported)
 
-**Purpose**: Core repository analysis logic
-
-**Go Changes**:
-- ✨ **New Exported Type** (L15-25):
-  \```go
-  type Analyzer struct {
-      workDir string
-      verbose bool
-  }
-  \```
-  **Idiom**: Unexported fields, exported type. Zero value not usable (requires constructor).
-
-- ✨ **New Constructor** (L27-32):
-  \```go
-  func NewAnalyzer(workDir string, verbose bool) *Analyzer
-  \```
-  **Idiom**: Returns pointer for mutation. Clear parameter names.
-
-- 🔧 **Modified Method** (L43-68):
-  Changed `detectFramework` from exported to unexported.
-  **Idiom**: Unexport internal methods (lowercase first letter).
-
-**Impact**: Creates new public API for analyzer package. Maintains backward compatibility.
+**Impact**: New public API, maintains backward compatibility
 
 ---
 
-#### `internal/analyzer/zip.go` (+80)
+### `internal/analyzer/zip.go` (+80)
+**Purpose**: ZIP extraction and analysis
 
-**Purpose**: ZIP file extraction and analysis
-
-**Go Security**:
-- ✅ Zip slip protection (L113-117)
-- ✅ Directory permissions 0750 (not 0755)
-- ✅ Error wrapping with `fmt.Errorf` and `%w`
-
-**Go Best Practices**:
-- ✅ Named return values avoided (clarity over brevity)
-- ✅ Error checks before defer
-- ✅ Context-aware errors: `fmt.Errorf("failed to extract %s: %w", file.Name, err)`
+**Highlights**:
+- ✅ Zip slip protection
+- ✅ Secure permissions (0750)
+- ✅ Proper error wrapping with `%w`
 
 ---
 
-### 📦 Package: `cmd`
-
-#### `cmd/root.go` (+15/-2)
-
-**Purpose**: Cobra CLI root command
-
-**Go Changes**:
-- ✨ **Added version info** (L36-42):
-  \```go
-  func SetVersionInfo(v, c, d, b string)
-  \```
-  **Idiom**: Simple setter, clear single-letter params acceptable for version/commit/date.
-
-- 🔧 **Fixed error handling** (L62-63):
-  Changed from ignored errors to explicit blank assignment: `_ = viper.BindPFlag(...)`
-  **Idiom**: Explicit about intentionally ignored errors.
-
-**Impact**: Enables GoReleaser version injection. No breaking changes.
+### `cmd/root.go` (+15/-2)
+**Changes**:
+- ✨ Added `SetVersionInfo()` for GoReleaser
+- 🔧 Explicit error ignoring with `_`
 
 ---
 
-### 📦 Dependencies: `go.mod`
-
-#### Changes
-- ⬆️ **Updated Go version**: 1.24 → 1.25
-- ➕ **No new dependencies added**
-- ✅ **All indirect dependencies up to date**
-
-**Go 1.25 Benefits**:
-- DWARF5 debug info (smaller binaries)
-- Improved slice stack allocation
-- Container-aware GOMAXPROCS
+### `go.mod` (+3/-2)
+- ⬆️ Go 1.24 → 1.25 (DWARF5, better allocations)
+- ✅ All dependencies up to date
 
 </details>
 
-## 📊 Test Coverage
+## 📊 Testing
 
-### Test Changes
-\```bash
-# Run tests
-task test
-
-# With coverage
-go test ./... -cover -coverprofile=coverage.out
-go tool cover -func=coverage.out
-\```
-
-**Coverage Impact**:
-- **Before**: X% coverage
-- **After**: Y% coverage (+Z%)
-- **New tests**: [count] test functions added
-- **Table-driven tests**: Yes/No
-
-### Test Files Modified
-- [ ] `internal/analyzer/analyzer_test.go` - Unit tests for analyzer
-- [ ] `internal/analyzer/zip_test.go` - ZIP extraction tests
-- [ ] Integration tests needed for end-to-end flows
-
-## ⚡ Performance Impact
-
-### Benchmarks
-\```bash
-# Run benchmarks
-task bench
-# Or
-go test -bench=. -benchmem ./...
-\```
-
-**Expected Impact**:
-- **Memory**: [No change / +X% / -X%]
-- **Allocations**: [No change / +X / -X per operation]
-- **Speed**: [No change / +X% faster / -X% slower]
-
-### Profiling
-- [ ] CPU profiling done
-- [ ] Memory profiling done
-- [ ] Trace analysis done
+**Coverage**: [Before → After] | **New tests**: [count] | **Commands**: `task test`, `task bench`
 
 ## 💥 Breaking Changes
 
-### API Changes
+[List any breaking API changes with brief migration guide]
 
-**BREAKING**: `Analysis` struct field changes
+## 🔒 Security
 
-**Before**:
-\```go
-type Analysis struct {
-    EnvVars []string  // Old: slice of strings
-}
-\```
-
-**After**:
-\```go
-type Analysis struct {
-    EnvVars map[string]string  // New: map for key-value pairs
-}
-\```
-
-**Migration**:
-\```go
-// Old usage
-for _, env := range analysis.EnvVars {
-    fmt.Println(env)
-}
-
-// New usage
-for key, value := range analysis.EnvVars {
-    fmt.Printf("%s=%s\n", key, value)
-}
-\```
-
-## 🔒 Security & Go Safety
-
-### Security Checks
-- ✅ No SQL injection (parameterized queries)
+- ✅ No data races (`-race` flag passed)
+- ✅ Input validation
 - ✅ No hardcoded secrets
-- ✅ Input validation on user-provided paths
-- ✅ Directory traversal prevention (zip slip)
-- ✅ Proper error wrapping (no info leaks)
+- ✅ gosec passed
 
-### Go-Specific Safety
-- ✅ No data races (checked with `-race` flag)
-- ✅ Context cancellation handled
-- ✅ Goroutine leaks prevented
-- ✅ Channel closing done by sender only
-- ✅ Mutex locks paired with unlocks
+## 📋 Checklist
 
-### gosec Findings
-\```bash
-# Security scan
-golangci-lint run --enable=gosec
-\```
-- No critical issues
-- Minor: [List any warnings with nolint justification]
-
-## 📚 Documentation
-
-### Godoc Comments
-- ✅ All exported types documented
-- ✅ All exported functions documented
-- ✅ Package documentation in doc.go
-- ✅ Examples added where helpful
-
-### Example Usage
-\```go
-// Example: Create and use analyzer
-analyzer := analyzer.NewAnalyzer("/tmp/work", true)
-result, err := analyzer.Analyze("https://github.com/user/repo")
-if err != nil {
-    return fmt.Errorf("analysis failed: %w", err)
-}
-fmt.Printf("Framework: %s\n", result.Framework)
-\```
-
-### Documentation Files
-- [ ] README.md updated
-- [x] CLAUDE.md updated (Go 1.25 best practices added)
-- [ ] API docs regenerated
-- [ ] IMPLEMENTATION_STATUS.md updated
-
-## 🏷️ Suggested Labels
-
-`enhancement`, `go1.25`, `breaking-change`, `needs-review`, `documentation`
-
-## 📋 Go-Specific Checklist
-
-### Code Quality
-- [ ] All exports have godoc comments
-- [ ] No exported functions return unexported types
-- [ ] Errors use `%w` for wrapping, not `%v`
-- [ ] Variable names follow Go conventions (short, clear)
-- [ ] No "Get" prefix on getters
-- [ ] Interfaces are small (1-3 methods)
-- [ ] Accept interfaces, return structs
-
-### Testing
-- [ ] Tests use table-driven pattern where applicable
-- [ ] Test names follow `TestFunctionName` convention
-- [ ] Benchmarks use `b.ReportAllocs()` for memory tracking
-- [ ] Race detector passes: `go test -race ./...`
-- [ ] Coverage above 80% for new code
-
-### Performance
-- [ ] No unnecessary allocations in hot paths
-- [ ] Defer not used in loops
-- [ ] Sync.Pool used for reusable objects if needed
-- [ ] String concatenation uses strings.Builder for loops
-
-### Concurrency
-- [ ] Goroutines have clear lifecycle
-- [ ] Channels closed by sender
-- [ ] WaitGroups or errgroup used for coordination
-- [ ] Context used for cancellation
-
-### Build & CI
-- [ ] `go mod tidy` run
 - [ ] `task lint` passes
 - [ ] `task test` passes
 - [ ] `task build` succeeds
-- [ ] No new golangci-lint warnings
+- [ ] Godoc comments added for exports
+- [ ] Tests added/updated
+- [ ] No race conditions (`go test -race`)
+- [ ] `go mod tidy` run
 
 ## 🔗 Related Issues
 
@@ -498,7 +298,7 @@ flowchart TB
     analyzer --> types
     zip --> types
 
-    classDef exported fill:#87CEEB,stroke:#4682B4,stroke-width:2px
+    classDef exported fill:#60A5FA,stroke:#2563EB,stroke-width:3px
 ```
 
 **Interface Implementation**:
@@ -514,8 +314,8 @@ flowchart LR
     impl1 -- "implements" --> interface
     impl2 -- "implements" --> interface
 
-    classDef interface fill:#FFD700,stroke:#FF8C00,stroke-width:2px
-    classDef impl fill:#90EE90,stroke:#228B22,stroke-width:2px
+    classDef interface fill:#FBBF24,stroke:#F59E0B,stroke-width:3px
+    classDef impl fill:#4ADE80,stroke:#16A34A,stroke-width:3px
 ```
 
 **Concurrency Patterns**:
@@ -530,8 +330,8 @@ flowchart LR
     goroutine2 -- "sends to" --> channel
     channel -- "received by" --> select
 
-    classDef goroutine fill:#90EE90,stroke:#228B22,stroke-width:2px
-    classDef channel fill:#FFD700,stroke:#FF8C00,stroke-width:2px
+    classDef goroutine fill:#4ADE80,stroke:#16A34A,stroke-width:3px
+    classDef channel fill:#FBBF24,stroke:#F59E0B,stroke-width:3px
 ```
 
 ### Go Idiom Checklist

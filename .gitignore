@@ -49,3 +49,6 @@ config.yaml
 # GoReleaser
 dist/
 *.sarif
+
+# Task
+.task/

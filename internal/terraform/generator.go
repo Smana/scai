@@ -161,6 +161,46 @@ module "security_group" {
   }
 }
 
+# IAM Role for SSM access
+resource "aws_iam_role" "ssm_role" {
+  name_prefix = "%s-ssm-role-"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = {
+    Name        = "%s-ssm-role"
+    ManagedBy   = "SCIA"
+  }
+}
+
+# Attach SSM managed policy
+resource "aws_iam_role_policy_attachment" "ssm_policy" {
+  role       = aws_iam_role.ssm_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+# Instance profile
+resource "aws_iam_instance_profile" "ssm_profile" {
+  name_prefix = "%s-ssm-profile-"
+  role        = aws_iam_role.ssm_role.name
+
+  tags = {
+    Name      = "%s-ssm-profile"
+    ManagedBy = "SCIA"
+  }
+}
+
 # Auto Scaling Group Module - Single instance with auto-recovery
 module "asg" {
   source  = "terraform-aws-modules/autoscaling/aws"
@@ -182,6 +222,7 @@ module "asg" {
   # Launch template configuration
   image_id          = data.aws_ami.amazon_linux_2023.id
   instance_type     = "%s"
+  iam_instance_profile_arn = aws_iam_instance_profile.ssm_profile.arn
 
   security_groups = [module.security_group.security_group_id]
 
@@ -241,6 +282,10 @@ output "application_url" {
 		config.AppName,           // SG description
 		config.Port, config.Port, // ingress ports
 		config.AppName,      // SG tag
+		config.AppName,      // IAM role name prefix
+		config.AppName,      // IAM role tag
+		config.AppName,      // Instance profile name prefix
+		config.AppName,      // Instance profile tag
 		config.AppName,      // ASG name
 		config.InstanceType, // instance type
 		config.VolumeSize,   // volume size
@@ -254,6 +299,14 @@ output "application_url" {
 
 // generateUserData creates the user-data script for EC2 instances
 func (g *Generator) generateUserData(config *types.TerraformConfig) string {
+	// Determine app directory path
+	appDir := config.AppDir
+	if appDir == "" || appDir == "." {
+		appDir = ""
+	} else {
+		appDir = "/" + appDir
+	}
+
 	return fmt.Sprintf(`#!/bin/bash
 set -e
 
@@ -262,7 +315,7 @@ exec > >(tee /var/log/user-data.log)
 exec 2>&1
 
 echo "Starting deployment for %s"
-echo "Framework: %s, Language: %s"
+echo "Framework: %s, Language: %s, AppDir: %s"
 
 # Install git
 yum install -y git
@@ -270,36 +323,59 @@ yum install -y git
 # Clone repository
 cd /home/ec2-user
 git clone %s app || echo "Clone failed, continuing..."
-cd app || exit 1
+cd app%s || exit 1
 
 # Install dependencies based on language
 case "%s" in
   python|Python)
     yum install -y python3 python3-pip
-    pip3 install -r requirements.txt || echo "No requirements.txt"
+    pip3 install -r requirements.txt || echo "No requirements.txt found"
     ;;
   javascript|node*)
     curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
     yum install -y nodejs
-    npm install || echo "No package.json"
+    npm install || echo "No package.json found"
     ;;
   go|Go)
     yum install -y golang
-    go mod download || echo "No go.mod"
+    go mod download || echo "No go.mod found"
     ;;
 esac
 
-echo "Setup complete. App ready at port %d"
+echo "Dependencies installed. Starting application..."
 
-# Start application (in production, use systemd service)
-# %s
+# Create a simple script to run the app with proper host binding
+cat > /home/ec2-user/start_app.sh << 'SCRIPT'
+#!/bin/bash
+cd /home/ec2-user/app%s
+
+# Modify Python files to bind to 0.0.0.0 instead of 127.0.0.1
+if [ "%s" = "python" ] || [ "%s" = "Python" ]; then
+  # Fix Flask/Django to bind to 0.0.0.0
+  find . -name "*.py" -type f -exec sed -i 's/host="127\.0\.0\.1"/host="0.0.0.0"/g' {} \;
+  find . -name "*.py" -type f -exec sed -i "s/host='127\.0\.0\.1'/host='0.0.0.0'/g" {} \;
+fi
+
+# Run the application
+%s
+SCRIPT
+
+chmod +x /home/ec2-user/start_app.sh
+
+# Run the application in the background
+nohup /home/ec2-user/start_app.sh > /var/log/app.log 2>&1 &
+
+echo "Application started on port %d. Check /var/log/app.log for details."
 `,
 		config.AppName,
-		config.Framework, config.Language,
+		config.Framework, config.Language, config.AppDir,
 		config.RepoURL,
+		appDir,
 		config.Language,
-		config.Port,
+		appDir,
+		config.Language, config.Language,
 		config.StartCommand,
+		config.Port,
 	)
 }
 

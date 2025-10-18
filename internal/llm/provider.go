@@ -2,6 +2,7 @@ package llm
 
 import (
 	"context"
+	"fmt"
 )
 
 // Provider defines the interface for LLM providers
@@ -54,12 +55,20 @@ type ModelInfo struct {
 
 // ProviderConfig holds provider-specific configuration
 type ProviderConfig struct {
-	// Provider type: "ollama", "huggingface", "local"
+	// Provider type: "ollama", "gemini", "openai", "huggingface", "local"
 	Type string
 
 	// Ollama configuration
 	OllamaURL   string // Default: http://localhost:11434
 	OllamaModel string // Default model for Ollama
+
+	// Gemini configuration
+	GeminiAPIKey string // Google AI Studio API key
+	GeminiModel  string // Default model (gemini-2.0-pro-exp)
+
+	// OpenAI configuration
+	OpenAIAPIKey string // OpenAI API key
+	OpenAIModel  string // Default model (gpt-4o)
 
 	// HuggingFace configuration
 	HFToken    string // HuggingFace API token (optional)
@@ -99,6 +108,23 @@ func NewProviderManager(config *ProviderConfig, verbose bool) (*ProviderManager,
 		ollamaProvider, err := NewOllamaProvider(config.OllamaURL, config.OllamaModel, verbose)
 		if err == nil {
 			providers = append(providers, ollamaProvider)
+		}
+	}
+
+	// Add Gemini if configured
+	if config.Type == "gemini" {
+		geminiProvider, err := NewGeminiProvider(config.GeminiAPIKey, config.GeminiModel, verbose)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize Gemini provider: %w", err)
+		}
+		providers = append(providers, geminiProvider)
+	}
+
+	// Add OpenAI if configured
+	if config.Type == "openai" {
+		openaiProvider, err := NewOpenAIProvider(config.OpenAIAPIKey, config.OpenAIModel, verbose)
+		if err == nil {
+			providers = append(providers, openaiProvider)
 		}
 	}
 

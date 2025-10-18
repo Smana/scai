@@ -199,11 +199,10 @@ Viper configuration order (cmd/root.go):
 6. Test with real repository
 
 ### Adding a New Deployment Strategy
-1. Create Terraform template in `internal/terraform/templates/` (e.g., `gcp_vm.tf.tmpl`)
-2. Update generator.go to handle new strategy
-3. Add knowledge to `internal/llm/knowledge.go` about when to use it
-4. Add rules to `configs/deployment_rules.yaml`
-5. Update types/types.go if new config fields needed
+1. Update `internal/terraform/generator.go` to add new strategy generation function (inline Terraform code)
+2. Add knowledge to `internal/llm/knowledge.go` about when to use the new strategy
+3. Add rules to `configs/deployment_rules.yaml`
+4. Update `internal/types/types.go` if new config fields are needed
 
 ### Modifying LLM Behavior
 - Edit `internal/llm/knowledge.go` to change DeploymentKnowledgeBase (decision rules, best practices)
