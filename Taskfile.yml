@@ -130,25 +130,15 @@ tasks:
 
   # OpenTofu/Terraform validation tasks
   tofu-validate:
-    desc: Validate OpenTofu modules using Dagger pre-commit-tf
+    desc: Validate OpenTofu modules using Dagger pre-commit-tf (Terraform-only hooks)
     cmds:
       - |
+        cp .pre-commit-config.yaml .pre-commit-config.yaml.bak
+        cp .pre-commit-config-tofu.yaml .pre-commit-config.yaml
         dagger call -m {{.DAGGER_PRECOMMIT_TF_MODULE}} \
-          run --dir "." --tf-binary="tofu"
-
-  tofu-fmt:
-    desc: Format OpenTofu files
-    cmds:
-      - tofu fmt -recursive opentofu/
-
-  tofu-init-validate:
-    desc: Initialize and validate all OpenTofu modules (local)
-    cmds:
-      - |
-        for module in opentofu/modules/*/; do
-          echo "Validating $module"
-          cd "$module" && tofu init && tofu validate && cd -
-        done
+          run --dir "." --tf-binary="tofu" || EXIT_CODE=$?
+        mv .pre-commit-config.yaml.bak .pre-commit-config.yaml
+        exit ${EXIT_CODE:-0}
 
   mod-version:
     desc: Show Go version from go.mod

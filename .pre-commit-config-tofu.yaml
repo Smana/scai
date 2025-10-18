@@ -1,0 +1,17 @@
+repos:
+  # Terraform/OpenTofu checks only (for Dagger CI)
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.99.0
+    hooks:
+      - id: terraform_fmt
+        args:
+          - --args=-diff
+          - --args=-write=true
+      - id: terraform_validate
+        args:
+          - --args=-json
+          - --tf-init-args=-upgrade
+          - --hook-config=--retry-once-with-cleanup=true
+
+default_language_version:
+  python: python3

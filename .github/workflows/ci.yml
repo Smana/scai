@@ -82,6 +82,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Use Terraform-only pre-commit config
+        run: cp .pre-commit-config-tofu.yaml .pre-commit-config.yaml
+
       - name: Validate OpenTofu configuration
         uses: dagger/dagger-for-github@v7
         with:
