@@ -204,7 +204,7 @@ resource "aws_iam_instance_profile" "ssm_profile" {
 # Auto Scaling Group Module - Single instance with auto-recovery
 module "asg" {
   source  = "terraform-aws-modules/autoscaling/aws"
-  version = "~> 8.0"
+  version = "~> 9.0"
 
   name = "%s-asg"
 
@@ -400,7 +400,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = "~> 6.0"
     }
     kubernetes = {
       source  = "hashicorp/kubernetes"
@@ -456,11 +456,13 @@ module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 21.0"
 
-  cluster_name    = "%s-eks"
-  cluster_version = "1.31"
+  name               = "%s-eks"
+  kubernetes_version = "1.31"
 
   # Cluster endpoint access
-  cluster_endpoint_public_access = true
+  cluster_endpoint_config = {
+    endpoint_public_access = true
+  }
 
   # Enable cluster creator admin permissions
   enable_cluster_creator_admin_permissions = true
