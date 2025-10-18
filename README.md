@@ -2,7 +2,7 @@
 
 > **AI-powered deployment that turns natural language into cloud infrastructure**
 
-> ⚠️ **Experimental v1**: This is an initial experimentation and proof-of-concept. See [ROADMAP_V2.md](ROADMAP_V2.md) and [docs/](docs/) for production-ready v2 architecture and upcoming features.
+> ⚠️ **Experimental v1**: This is an initial experimentation and proof-of-concept. See [ROADMAP_V2.md](docs/V2_README.md) for production-ready v2 architecture and upcoming features.
 
 **SCIA** (from Latin *"scio"* - "I know" + IA) analyzes your code, determines the optimal deployment strategy using AI, and automatically provisions infrastructure on AWS.
 

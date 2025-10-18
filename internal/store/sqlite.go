@@ -174,7 +174,6 @@ func (s *SQLiteStore) Create(ctx context.Context, deployment *Deployment) error 
 		deployment.DeployedAt,
 		deployment.DestroyedAt,
 	)
-
 	if err != nil {
 		return fmt.Errorf("failed to insert deployment: %w", err)
 	}
@@ -314,69 +313,11 @@ func (s *SQLiteStore) List(ctx context.Context, filter *DeploymentFilter) ([]*De
 	deployments := []*Deployment{}
 
 	for rows.Next() {
-		var deployment Deployment
-		var analysisJSON, configJSON, outputsJSON, warningsJSON, optimizationsJSON []byte
-		var llmProvider, llmModel sql.NullString
-
-		err := rows.Scan(
-			&deployment.ID,
-			&deployment.AppName,
-			&deployment.UserPrompt,
-			&deployment.RepoURL,
-			&deployment.RepoCommitSHA,
-			&deployment.Strategy,
-			&deployment.Region,
-			&deployment.Status,
-			&deployment.TerraformStateKey,
-			&deployment.TerraformDir,
-			&llmProvider,
-			&llmModel,
-			&analysisJSON,
-			&configJSON,
-			&outputsJSON,
-			&warningsJSON,
-			&optimizationsJSON,
-			&deployment.ErrorMessage,
-			&deployment.CreatedAt,
-			&deployment.UpdatedAt,
-			&deployment.DeployedAt,
-			&deployment.DestroyedAt,
-		)
-
+		deployment, err := s.scanDeployment(rows)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan deployment: %w", err)
+			return nil, err
 		}
-
-		// Convert sql.NullString to string
-		if llmProvider.Valid {
-			deployment.LLMProvider = llmProvider.String
-		}
-		if llmModel.Valid {
-			deployment.LLMModel = llmModel.String
-		}
-
-		// Deserialize JSON fields
-		if err := json.Unmarshal(analysisJSON, &deployment.Analysis); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal analysis: %w", err)
-		}
-
-		if err := json.Unmarshal(configJSON, &deployment.Config); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal config: %w", err)
-		}
-
-		if err := json.Unmarshal(outputsJSON, &deployment.Outputs); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal outputs: %w", err)
-		}
-
-		if err := json.Unmarshal(warningsJSON, &deployment.Warnings); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal warnings: %w", err)
-		}
-
-		if err := json.Unmarshal(optimizationsJSON, &deployment.Optimizations); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal optimizations: %w", err)
-		}
-
-		deployments = append(deployments, &deployment)
+		deployments = append(deployments, deployment)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -384,6 +325,76 @@ func (s *SQLiteStore) List(ctx context.Context, filter *DeploymentFilter) ([]*De
 	}
 
 	return deployments, nil
+}
+
+// scanDeployment scans a single deployment row and deserializes JSON fields
+func (s *SQLiteStore) scanDeployment(rows *sql.Rows) (*Deployment, error) {
+	var deployment Deployment
+	var analysisJSON, configJSON, outputsJSON, warningsJSON, optimizationsJSON []byte
+	var llmProvider, llmModel sql.NullString
+
+	err := rows.Scan(
+		&deployment.ID,
+		&deployment.AppName,
+		&deployment.UserPrompt,
+		&deployment.RepoURL,
+		&deployment.RepoCommitSHA,
+		&deployment.Strategy,
+		&deployment.Region,
+		&deployment.Status,
+		&deployment.TerraformStateKey,
+		&deployment.TerraformDir,
+		&llmProvider,
+		&llmModel,
+		&analysisJSON,
+		&configJSON,
+		&outputsJSON,
+		&warningsJSON,
+		&optimizationsJSON,
+		&deployment.ErrorMessage,
+		&deployment.CreatedAt,
+		&deployment.UpdatedAt,
+		&deployment.DeployedAt,
+		&deployment.DestroyedAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan deployment: %w", err)
+	}
+
+	// Convert sql.NullString to string
+	if llmProvider.Valid {
+		deployment.LLMProvider = llmProvider.String
+	}
+	if llmModel.Valid {
+		deployment.LLMModel = llmModel.String
+	}
+
+	// Deserialize JSON fields
+	if err := s.deserializeJSONFields(&deployment, analysisJSON, configJSON, outputsJSON, warningsJSON, optimizationsJSON); err != nil {
+		return nil, err
+	}
+
+	return &deployment, nil
+}
+
+// deserializeJSONFields unmarshals JSON data into deployment fields
+func (s *SQLiteStore) deserializeJSONFields(deployment *Deployment, analysisJSON, configJSON, outputsJSON, warningsJSON, optimizationsJSON []byte) error {
+	if err := json.Unmarshal(analysisJSON, &deployment.Analysis); err != nil {
+		return fmt.Errorf("failed to unmarshal analysis: %w", err)
+	}
+	if err := json.Unmarshal(configJSON, &deployment.Config); err != nil {
+		return fmt.Errorf("failed to unmarshal config: %w", err)
+	}
+	if err := json.Unmarshal(outputsJSON, &deployment.Outputs); err != nil {
+		return fmt.Errorf("failed to unmarshal outputs: %w", err)
+	}
+	if err := json.Unmarshal(warningsJSON, &deployment.Warnings); err != nil {
+		return fmt.Errorf("failed to unmarshal warnings: %w", err)
+	}
+	if err := json.Unmarshal(optimizationsJSON, &deployment.Optimizations); err != nil {
+		return fmt.Errorf("failed to unmarshal optimizations: %w", err)
+	}
+	return nil
 }
 
 // Update updates a deployment record
@@ -462,7 +473,6 @@ func (s *SQLiteStore) Update(ctx context.Context, deployment *Deployment) error 
 		deployment.DestroyedAt,
 		deployment.ID,
 	)
-
 	if err != nil {
 		return fmt.Errorf("failed to update deployment: %w", err)
 	}
@@ -491,7 +501,6 @@ func (s *SQLiteStore) UpdateStatus(ctx context.Context, id string, status Deploy
 			destroyed_at = COALESCE(destroyed_at, ?)
 		WHERE id = ?
 	`, status, errorMessage, now, deployedAt, destroyedAt, id)
-
 	if err != nil {
 		return fmt.Errorf("failed to update deployment status: %w", err)
 	}

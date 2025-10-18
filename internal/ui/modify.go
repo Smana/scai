@@ -39,7 +39,6 @@ func ConfirmOrModify(plan *DeploymentPlan, analysis *types.Analysis, config *dep
 		userInput, err := pterm.DefaultInteractiveTextInput.
 			WithDefaultText("Your choice").
 			Show()
-
 		if err != nil {
 			return false, config, fmt.Errorf("failed to read input: %w", err)
 		}

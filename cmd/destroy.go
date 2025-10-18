@@ -76,7 +76,6 @@ func runDestroy(cmd *cobra.Command, args []string) error {
 		response, err := pterm.DefaultInteractiveTextInput.
 			WithDefaultText("Type 'yes' to confirm").
 			Show()
-
 		if err != nil {
 			return fmt.Errorf("failed to read input: %w", err)
 		}
