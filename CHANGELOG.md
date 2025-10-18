@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/Smana/scia/compare/v0.4.0...v0.5.0) (2025-10-18)
+
+
+### Features
+
+* implement 3-tier rule-based decision engine for deployment strategy ([8fed5e0](https://github.com/Smana/scia/commit/8fed5e021ea950026d798a806ded96355d9971c8))
+
 ## [0.4.0](https://github.com/Smana/scia/compare/v0.3.0...v0.4.0) (2025-10-18)
 
 
