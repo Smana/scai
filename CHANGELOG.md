@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0](https://github.com/Smana/scia/compare/v0.2.0...v0.3.0) (2025-10-18)
+
+
+### Features
+
+* add deployment tracking, UI consistency, and LLM improvements ([6d7065d](https://github.com/Smana/scia/commit/6d7065d8192a85a2dff478cabc4f1a6b570ee279))
+* add deployment tracking, UI consistency, and LLM improvements ([89471b8](https://github.com/Smana/scia/commit/89471b8ae75c83aad8563eb4651319d3902dd863))
+
 ## [0.2.0](https://github.com/Smana/scia/compare/v0.1.0...v0.2.0) (2025-10-17)
 
 
