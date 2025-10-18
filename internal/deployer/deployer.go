@@ -26,6 +26,10 @@ type DeployConfig struct {
 	TerraformBin string
 	Verbose      bool
 
+	// LLM information
+	LLMProvider string
+	LLMModel    string
+
 	// EC2 sizing
 	EC2InstanceType string
 	EC2VolumeSize   int
@@ -82,6 +86,8 @@ func (d *Deployer) Deploy() (*types.DeploymentResult, error) {
 		Status:            store.DeploymentStatusRunning,
 		TerraformStateKey: fmt.Sprintf("deployments/%s/terraform.tfstate", deploymentID),
 		TerraformDir:      "",
+		LLMProvider:       d.config.LLMProvider,
+		LLMModel:          d.config.LLMModel,
 		Analysis:          d.config.Analysis,
 		Config:            nil,
 		Outputs:           make(map[string]string),
@@ -104,8 +110,8 @@ func (d *Deployer) Deploy() (*types.DeploymentResult, error) {
 		}
 	}
 
-	// Create terraform directory
-	tfDir := filepath.Join(d.config.WorkDir, "terraform")
+	// Create terraform directory unique to this deployment
+	tfDir := filepath.Join(d.config.WorkDir, "terraform", deploymentID)
 
 	if d.config.Verbose {
 		fmt.Printf("   Creating Terraform configuration...\n")
@@ -215,6 +221,33 @@ func (d *Deployer) Deploy() (*types.DeploymentResult, error) {
 			_ = d.store.UpdateStatus(ctx, deploymentID, store.DeploymentStatusFailed, fmt.Sprintf("failed to get outputs: %v", err))
 		}
 		return nil, fmt.Errorf("failed to get terraform outputs: %w", err)
+	}
+
+	// For VM strategy, get the actual application URL
+	if d.config.Strategy == "vm" {
+		if asgName, ok := outputs["asg_name"]; ok {
+			if portStr, ok := outputs["application_port"]; ok {
+				port, err := ParsePort(portStr)
+				if err == nil {
+					if d.config.Verbose {
+						fmt.Printf("   Checking application availability...\n")
+					}
+
+					appURL, err := GetApplicationURL(ctx, asgName, d.config.AWSRegion, port, d.config.Verbose)
+					if err != nil {
+						// Log warning but don't fail deployment
+						if d.config.Verbose {
+							fmt.Printf("   Warning: %v\n", err)
+						}
+						outputs["application_url"] = appURL
+						outputs["application_status"] = "Application may still be starting up. Please wait a few minutes."
+					} else {
+						outputs["application_url"] = appURL
+						outputs["application_status"] = "Application is ready!"
+					}
+				}
+			}
+		}
 	}
 
 	// Build deployment result

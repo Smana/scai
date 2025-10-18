@@ -84,6 +84,16 @@ func runShow(cmd *cobra.Command, args []string) error {
 		pterm.Println()
 	}
 
+	// LLM information
+	if deployment.LLMProvider != "" {
+		pterm.DefaultSection.Println("🤖 LLM Configuration")
+		pterm.Printf("   Provider:     %s\n", deployment.LLMProvider)
+		if deployment.LLMModel != "" {
+			pterm.Printf("   Model:        %s\n", deployment.LLMModel)
+		}
+		pterm.Println()
+	}
+
 	// Terraform state
 	pterm.DefaultSection.Println("🔧 Terraform")
 	pterm.Printf("   State Key:    %s\n", deployment.TerraformStateKey)

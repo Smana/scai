@@ -114,6 +114,22 @@ func (a *Analyzer) detectFramework(repoPath string) (string, string, error) {
 			if _, djangoFound := findFileRecursive(repoPath, "manage.py"); djangoFound {
 				return "django", relAppDir, nil
 			}
+
+			// Check pyproject.toml content for framework hints
+			content, err := os.ReadFile(pyprojectPath)
+			if err == nil {
+				contentStr := string(content)
+				if regexp.MustCompile(`(?i)fastapi`).MatchString(contentStr) {
+					return "fastapi", relAppDir, nil
+				}
+				if regexp.MustCompile(`(?i)django`).MatchString(contentStr) {
+					return "django", relAppDir, nil
+				}
+				if regexp.MustCompile(`(?i)flask`).MatchString(contentStr) {
+					return "flask", relAppDir, nil
+				}
+			}
+
 			return "flask", relAppDir, nil
 		}
 
@@ -123,6 +139,22 @@ func (a *Analyzer) detectFramework(repoPath string) (string, string, error) {
 			if _, djangoFound := findFileRecursive(repoPath, "manage.py"); djangoFound {
 				return "django", relAppDir, nil
 			}
+
+			// Check pyproject.toml content for framework hints
+			content, err := os.ReadFile(pyprojectPath)
+			if err == nil {
+				contentStr := string(content)
+				if regexp.MustCompile(`(?i)fastapi`).MatchString(contentStr) {
+					return "fastapi", relAppDir, nil
+				}
+				if regexp.MustCompile(`(?i)django`).MatchString(contentStr) {
+					return "django", relAppDir, nil
+				}
+				if regexp.MustCompile(`(?i)flask`).MatchString(contentStr) {
+					return "flask", relAppDir, nil
+				}
+			}
+
 			return "flask", relAppDir, nil
 		}
 	}
@@ -137,7 +169,22 @@ func (a *Analyzer) detectFramework(repoPath string) (string, string, error) {
 		if _, djangoFound := findFileRecursive(repoPath, "manage.py"); djangoFound {
 			return "django", relAppDir, nil
 		}
+
 		// Check requirements.txt content for framework hints
+		content, err := os.ReadFile(reqPath)
+		if err == nil {
+			contentStr := string(content)
+			if regexp.MustCompile(`(?i)fastapi`).MatchString(contentStr) {
+				return "fastapi", relAppDir, nil
+			}
+			if regexp.MustCompile(`(?i)django`).MatchString(contentStr) {
+				return "django", relAppDir, nil
+			}
+			if regexp.MustCompile(`(?i)flask`).MatchString(contentStr) {
+				return "flask", relAppDir, nil
+			}
+		}
+
 		return "flask", relAppDir, nil // Default Python framework
 	}
 
@@ -149,6 +196,22 @@ func (a *Analyzer) detectFramework(repoPath string) (string, string, error) {
 		if _, djangoFound := findFileRecursive(repoPath, "manage.py"); djangoFound {
 			return "django", relAppDir, nil
 		}
+
+		// Check Pipfile content for framework hints
+		content, err := os.ReadFile(pipfilePath)
+		if err == nil {
+			contentStr := string(content)
+			if regexp.MustCompile(`(?i)fastapi`).MatchString(contentStr) {
+				return "fastapi", relAppDir, nil
+			}
+			if regexp.MustCompile(`(?i)django`).MatchString(contentStr) {
+				return "django", relAppDir, nil
+			}
+			if regexp.MustCompile(`(?i)flask`).MatchString(contentStr) {
+				return "flask", relAppDir, nil
+			}
+		}
+
 		return "flask", relAppDir, nil
 	}
 
@@ -291,6 +354,27 @@ func (a *Analyzer) extractDependencies(repoPath, language string) ([]string, err
 // detectStartCommand detects the application start command (without cd, as that's handled by the generator)
 func (a *Analyzer) detectStartCommand(repoPath, framework, appDir, packageManager string) string {
 	switch framework {
+	case "fastapi":
+		// FastAPI typically uses uvicorn
+		entryPoint := "main:app"
+		if fileExists(filepath.Join(repoPath, appDir, "main.py")) {
+			entryPoint = "main:app"
+		} else if fileExists(filepath.Join(repoPath, appDir, "app.py")) {
+			entryPoint = "app:app"
+		}
+
+		// Use package manager-specific command
+		switch packageManager {
+		case "poetry":
+			return "poetry run uvicorn " + entryPoint + " --host 0.0.0.0 --port 8000"
+		case "uv":
+			return "uv run uvicorn " + entryPoint + " --host 0.0.0.0 --port 8000"
+		case "pipenv":
+			return "pipenv run uvicorn " + entryPoint + " --host 0.0.0.0 --port 8000"
+		default: // pip
+			return "uvicorn " + entryPoint + " --host 0.0.0.0 --port 8000"
+		}
+
 	case "flask":
 		// Determine the Python entry point
 		entryPoint := "app.py"
@@ -350,7 +434,7 @@ func (a *Analyzer) detectPort(repoPath, framework, appDir string) int {
 	appPath := filepath.Join(repoPath, appDir)
 
 	switch framework {
-	case "flask", "django":
+	case "fastapi", "flask", "django":
 		// Scan Python files for port=XXXX
 		if port := a.scanPythonFilesForPort(appPath); port > 0 {
 			return port
@@ -359,6 +443,7 @@ func (a *Analyzer) detectPort(repoPath, framework, appDir string) int {
 		if framework == "flask" {
 			return 5000
 		}
+		// FastAPI and Django default to 8000
 		return 8000
 
 	case "express":

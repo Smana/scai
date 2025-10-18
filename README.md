@@ -2,6 +2,8 @@
 
 > **AI-powered deployment that turns natural language into cloud infrastructure**
 
+> ⚠️ **Experimental v1**: This is an initial experimentation and proof-of-concept. See [ROADMAP_V2.md](ROADMAP_V2.md) and [docs/](docs/) for production-ready v2 architecture and upcoming features.
+
 **SCIA** (from Latin *"scio"* - "I know" + IA) analyzes your code, determines the optimal deployment strategy using AI, and automatically provisions infrastructure on AWS.
 
 ```bash
@@ -87,44 +89,85 @@ scia destroy <deployment-id>
 ```
 
 ### Example Deployment Session
-```
-🐳 Setting up Ollama with Docker...
-Creating Ollama container...
-✓ Ollama container is ready
-Pulling model qwen2.5-coder:7b...
-✓ Model qwen2.5-coder:7b is ready
+```bash
+$ scia deploy "Deploy this Flask app with 50GB disk and t3.medium instance" https://github.com/Arvo-AI/hello_world
+
+Using config file: /home/user/.scia.yaml
+✓ Database initialized: /home/user/.scia/deployments.db
+🐳 Checking Docker Ollama...
+✓ Ollama container is already running
+✓ Model qwen2.5-coder:7b is already available
+
+✓ Using LLM provider: ollama
+
+🔍 Detected configuration from prompt:
+   Strategy: vm
+   Region: eu-west-3
+   EC2 Instance: t3.medium
+
+🚀 SCIA Deployment Starting...
+   User Prompt: Deploy this Flask app with 50GB disk and t3.medium instance
+   Repository: https://github.com/Arvo-AI/hello_world
+   Work Directory: /tmp/scia
+   AWS Region: eu-west-3
+   Terraform Binary: tofu
 
 📊 Analyzing repository...
-✅ Detected: flask (python), Port 5000
+Cloning repository: https://github.com/Arvo-AI/hello_world
+   Framework: flask
+   Language: python
+   Port: 5000
+   Dependencies: 1
+   Docker: false
 
 🤖 Determining deployment strategy...
-   Recommended strategy: vm
+   Strategy from prompt: vm
 
 📋 Preparing deployment plan...
-┌─────────────────────────────────────────────┐
-│         🚀 Deployment Plan                   │
-├─────────────────────────────────────────────┤
-│ Strategy: EC2 VM                             │
-│ Region: us-east-1                            │
-│ Application: hello_world                     │
-│ Instance Type: t3.micro                      │
-│ Port: 5000                                   │
-└─────────────────────────────────────────────┘
 
-Proceed with deployment? [y/N]: y
+                               📋 DEPLOYMENT PLAN
 
-🚀 Deploying infrastructure...
+  Strategy: vm
+  Region: eu-west-3
+  Application: hello-world
+
+# Resources to be Created
+
+┌────────────────────┬─────────────────────┬───────────────────────────┬──────────────────────────┐
+│ Resource Type      │ Name                │ Configuration             │ Value                    │
+├────────────────────┼─────────────────────┼───────────────────────────┼──────────────────────────┤
+│ VPC                │ Default VPC         │   Type                    │ Default VPC              │
+│                    │                     │   Region                  │ eu-west-3                │
+│                    │                     │                           │                          │
+│ Security Group *   │ hello-world-sg      │   Ingress Ports           │ 22 (SSH), 5000 (App)     │
+│                    │                     │   Egress                  │ All traffic              │
+│                    │                     │   CIDR                    │ 0.0.0.0/0                │
+│                    │                     │                           │                          │
+│ Auto Scaling Group*│ hello-world-asg     │   Min/Max/Desired         │ 1/1/1                    │
+│                    │                     │   Health Check Type       │ EC2                      │
+│                    │                     │   Health Check Grace      │ 300s                     │
+│                    │                     │                           │                          │
+│ EC2 Instance *     │ hello-world (ASG)   │   Instance Type           │ t3.medium                │
+│                    │                     │   AMI                     │ Amazon Linux 2023        │
+│                    │                     │   Volume Size             │ 50 GB                    │
+│                    │                     │   Volume Type             │ GP3 (encrypted)          │
+│                    │                     │   Monitoring              │ Enabled                  │
+└────────────────────┴─────────────────────┴───────────────────────────┴──────────────────────────┘
+
+ INFO  * = Important resources (will incur costs)
+
+ SUCCESS  Auto-confirmed with --yes flag
+
+   Created deployment record: b2c0091f-af3f-46a4-9b13-213f607b1e1b
+   Creating Terraform configuration...
+   Running Terraform...
+
 ✅ Deployment Complete!
 
-📋 Deployment Summary:
-   Strategy: vm
-   Region: us-east-1
-
-🔗 Access URLs:
-   public_url: http://54.123.45.67:5000
-
 💡 Optimization Suggestions:
-   Consider using Gunicorn for production
+   • Consider using a production server (Gunicorn/Uvicorn) instead of development server
+   • Application runs on port 5000 - consider using a reverse proxy (Nginx) on port 80/443
+   • No .env.example found - ensure environment variables are documented
 
 🎉 Success! Your application is now deployed.
 ```
@@ -134,47 +177,102 @@ Proceed with deployment? [y/N]: y
 ```bash
 # List all your deployments
 $ scia list
-Found 3 deployment(s):
 
-ID                                    APP NAME              STRATEGY    REGION        STATUS         CREATED
-a1b2c3d4-e5f6-7890-abcd-ef1234567890  hello-world           vm          us-east-1     ✅ succeeded   2025-10-18 14:23
-b2c3d4e5-f6a7-8901-bcde-f12345678901  api-service           vm          eu-west-1     ✅ succeeded   2025-10-18 13:45
-c3d4e5f6-a7b8-9012-cdef-123456789012  microservices         kubernetes  us-west-2     🔄 running     2025-10-18 15:10
+                             Found 1 deployment(s)
 
-Use 'scia show <deployment-id>' to see detailed information
+ID                                   | APP NAME    | STRATEGY | REGION    | STATUS      | CREATED
+b2c0091f-af3f-46a4-9b13-213f607b1e1b | hello_world | vm       | eu-west-3 | 🔄 running  | 2025-10-18 14:18
+
+ INFO  Use 'scia show <deployment-id>' to see detailed information
+
 
 # Show detailed deployment information
-$ scia show a1b2c3d4
-═══════════════════════════════════════════════════════════════
-  DEPLOYMENT: hello-world
-═══════════════════════════════════════════════════════════════
+$ scia show b2c0091f-af3f-46a4-9b13-213f607b1e1b
 
-📋 Basic Information:
-   ID:           a1b2c3d4-e5f6-7890-abcd-ef1234567890
-   App Name:     hello-world
-   Status:       ✅ succeeded
+                            DEPLOYMENT: hello_world
+
+# 📋 Basic Information
+
+   ID:           b2c0091f-af3f-46a4-9b13-213f607b1e1b
+   App Name:     hello_world
+   Status:       🔄 running
    Strategy:     vm
-   Region:       us-east-1
+   Region:       eu-west-3
 
-🔗 Outputs:
-   public_url: http://54.123.45.67:5000
+
+# 📦 Repository
+
+   URL:          https://github.com/Arvo-AI/hello_world
+   Commit:       21eaaab0957681f6527813b33f1c887e06c20bcf
+
+
+# 💬 User Prompt
+
+   Deploy this Flask app with 50GB disk and t3.medium instance
+
+
+# 🔧 Terraform
+
+   State Key:    deployments/b2c0091f-af3f-46a4-9b13-213f607b1e1b/terraform.tfstate
+   Directory:    /tmp/scia/terraform
+
+
+# ⚙️  Configuration
+
+   Framework:    flask
+   Language:     python
+   Port:         5000
+   Instance:     t3.medium
+   Start Cmd:    python3 app.py
+
+
+# 🔗 Outputs
+
+   security_group_id: sg-0e2e442bfb7b6b05e
+   application_url: App will be available on port 5000 after instance launches
+   asg_name: hello_world-asg-20251018121916369300000007
+
+
+# 💡 Optimization Suggestions
+
+   • Consider using a production server (Gunicorn/Uvicorn) instead of development server
+   • Application runs on port 5000 - consider using a reverse proxy (Nginx) on port 80/443
+   • No .env.example found - ensure environment variables are documented
+
+
+# 🕐 Timestamps
+
+   Created:      2025-10-18 14:18:58 +0200
+   Updated:      2025-10-18 14:19:32 +0200
+
+
+# View outputs only
+$ scia outputs b2c0091f-af3f-46a4-9b13-213f607b1e1b
+
+                              Outputs: hello_world
+
+  application_url   = App will be available on port 5000 after instance launches
+  asg_name          = hello_world-asg-20251018121916369300000007
+  security_group_id = sg-0e2e442bfb7b6b05e
+
 
 # Destroy when done
-$ scia destroy a1b2c3d4
+$ scia destroy --yes b2c0091f-af3f-46a4-9b13-213f607b1e1b
 ═══════════════════════════════════════════════════════════════
-  DESTROY DEPLOYMENT: hello-world
+  DESTROY DEPLOYMENT: hello_world
 ═══════════════════════════════════════════════════════════════
 
-   ID:           a1b2c3d4-e5f6-7890-abcd-ef1234567890
+   ID:           b2c0091f-af3f-46a4-9b13-213f607b1e1b
+   App Name:     hello_world
    Strategy:     vm
-   Region:       us-east-1
+   Region:       eu-west-3
+   Status:       running
 
-⚠️  WARNING: This will destroy all infrastructure resources!
+ SUCCESS  Auto-confirmed with --yes flag
+ INFO  Destroying infrastructure...
 
-Do you want to proceed? (yes/no): yes
-
-🔥 Destroying infrastructure...
-✅ Deployment destroyed successfully!
+ SUCCESS  Deployment destroyed successfully!
+ INFO  Deployment ID: b2c0091f-af3f-46a4-9b13-213f607b1e1b
 ```
 
 ## 🧠 How It Works
@@ -199,17 +297,26 @@ Repository → Analyzer → AI Decision Engine → Terraform → AWS Infrastruct
 
 ### Natural Language Configuration
 
-SCIA understands infrastructure specifications in your prompts:
+SCIA understands infrastructure specifications in your prompts using Ollama LLM:
 
 ```bash
-# Specify instance type
-./scia deploy "Deploy on a t3.large instance" https://github.com/your-org/app
+# Specify instance type and disk size
+scia deploy "Deploy this Flask app with 50GB disk and t3.medium instance" https://github.com/your-org/app
+
+# Specify instance type only
+scia deploy "Deploy on a t3.large instance" https://github.com/your-org/app
 
 # Specify region
-./scia deploy "Deploy to us-west-2" https://github.com/your-org/app
+scia deploy "Deploy to us-west-2" https://github.com/your-org/app
 
 # Combine multiple parameters
-./scia deploy "Deploy to eu-west-1 on a t3.medium with 3 EKS nodes" https://github.com/your-org/app
+scia deploy "Deploy to eu-west-1 on a t3.medium with 3 EKS nodes" https://github.com/your-org/app
+
+# The LLM extracts:
+# - ec2_instance_type: t3.medium, t3.large, etc.
+# - volume_size: 50, 100, etc. (in GB)
+# - region: eu-west-3, us-west-2, etc.
+# - eks_min_nodes, eks_max_nodes, eks_desired_nodes
 ```
 
 ### Command-Line Flags
@@ -394,6 +501,7 @@ ollama pull qwen2.5-coder:7b
 
 ## 🗺️ Roadmap
 
+**Current Status:**
 - [x] EC2 VM deployments with Auto Scaling Groups
 - [x] Natural language prompt parsing
 - [x] Docker-based Ollama integration
@@ -403,13 +511,18 @@ ollama pull qwen2.5-coder:7b
 - [x] Deployment management (list, show, destroy, outputs, status)
 - [x] Interactive configuration with `scia init`
 - [x] Terraform state management with S3 backend
+
+**Coming Next:**
 - [ ] EKS Kubernetes deployments (code ready, needs testing)
 - [ ] AWS Lambda serverless deployments (code ready, needs testing)
+- [ ] Health checks and application URL verification
 - [ ] Support for GCP and Azure
 - [ ] Cost estimation before deployment
 - [ ] Deployment rollback mechanism
 - [ ] Private GitHub repository support
 - [ ] Web UI for deployment management
+
+📋 **See [ROADMAP_V2.md](ROADMAP_V2.md) and [docs/](docs/) for detailed future plans and architecture discussions.**
 
 ## 📄 License
 

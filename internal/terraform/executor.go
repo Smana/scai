@@ -66,7 +66,7 @@ func validateTerraformBinary(bin string) (string, error) {
 
 // Init initializes Terraform in the working directory
 func (e *Executor) Init() error {
-	args := []string{"init"}
+	args := []string{"init", "-reconfigure"}
 	if !e.verbose {
 		args = append(args, "-input=false")
 	}

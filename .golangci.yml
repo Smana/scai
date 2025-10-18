@@ -74,6 +74,7 @@ issues:
         - goconst   # Framework names are intentionally hardcoded
         - gocritic  # Complex detection logic requires flexible patterns
         - gosec
+        - dupl      # Framework detection patterns have intentional similarity
     - path: internal/parser/
       linters:
         - gocyclo

@@ -2,7 +2,7 @@ package store
 
 const (
 	// SchemaVersion is the current database schema version
-	SchemaVersion = 1
+	SchemaVersion = 2
 
 	// InitialSchema creates the deployments table
 	InitialSchema = `
@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS deployments (
     status TEXT NOT NULL,
     terraform_state_key TEXT NOT NULL,
     terraform_dir TEXT,
+    llm_provider TEXT,
+    llm_model TEXT,
     analysis_json TEXT,
     config_json TEXT,
     outputs_json TEXT,
@@ -40,9 +42,16 @@ CREATE TABLE IF NOT EXISTS schema_version (
     applied_at DATETIME NOT NULL
 );
 `
+
+	// AddLLMInfoMigration adds LLM provider and model columns
+	AddLLMInfoMigration = `
+ALTER TABLE deployments ADD COLUMN llm_provider TEXT;
+ALTER TABLE deployments ADD COLUMN llm_model TEXT;
+`
 )
 
 // Migrations is a list of schema migrations to apply in order
 var Migrations = []string{
 	InitialSchema,
+	AddLLMInfoMigration,
 }
