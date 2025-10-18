@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/Smana/scia/internal/rules"
 	"github.com/Smana/scia/internal/types"
 )
 
@@ -13,6 +14,7 @@ import (
 type Client struct {
 	providerManager *ProviderManager
 	config          *ProviderConfig
+	rules           *types.DeploymentRules
 }
 
 // NewClient creates a new LLM client with provider configuration
@@ -36,9 +38,16 @@ func NewClient(baseURL, model string) *Client {
 		logger.Printf("Warning: Failed to initialize LLM providers: %v", err)
 	}
 
+	// Load deployment rules
+	deploymentRules, err := rules.LoadRules("configs/deployment_rules.yaml")
+	if err != nil {
+		logger.Printf("Warning: Failed to load deployment rules: %v", err)
+	}
+
 	return &Client{
 		providerManager: pm,
 		config:          config,
+		rules:           deploymentRules,
 	}
 }
 
@@ -50,25 +59,51 @@ func NewClientWithConfig(config *ProviderConfig, verbose bool) (*Client, error) 
 		return nil, err
 	}
 
+	// Load deployment rules
+	deploymentRules, err := rules.LoadRules("configs/deployment_rules.yaml")
+	if err != nil {
+		logger.Printf("Warning: Failed to load deployment rules: %v", err)
+	}
+
 	return &Client{
 		providerManager: pm,
 		config:          config,
+		rules:           deploymentRules,
 	}, nil
 }
 
 // NewClientWithManager creates a client from an existing ProviderManager
 // This allows reusing a pre-configured ProviderManager (e.g., from initializeLLMProvider)
 func NewClientWithManager(pm *ProviderManager, config *ProviderConfig) *Client {
+	// Load deployment rules
+	deploymentRules, err := rules.LoadRules("configs/deployment_rules.yaml")
+	if err != nil {
+		logger.Printf("Warning: Failed to load deployment rules: %v", err)
+	}
+
 	return &Client{
 		providerManager: pm,
 		config:          config,
+		rules:           deploymentRules,
 	}
 }
 
 // DetermineStrategy uses LLM with comprehensive context to determine deployment strategy
+// Uses 3-tier decision architecture: Rules → LLM → Heuristics
 // Supports multiple providers with automatic fallback
 func (c *Client) DetermineStrategy(userPrompt string, analysis *types.Analysis) (string, error) {
-	// If no provider manager available, use heuristics immediately
+	// TIER 1: Try rule-based decision FIRST (fast, deterministic)
+	if c.rules != nil {
+		if ruleMatch, matched := rules.EvaluateRules(c.rules, analysis); matched {
+			if analysis.Verbose {
+				logger.Printf("Rule-Based Decision: %s\nRule: %s\nReason: %s\n",
+					ruleMatch.Strategy, ruleMatch.RuleName, ruleMatch.Reason)
+			}
+			return ruleMatch.Strategy, nil
+		}
+	}
+
+	// TIER 2: If no rule matches or LLM is unavailable, try LLM (intelligent)
 	if c.providerManager == nil {
 		if analysis.Verbose {
 			logger.Printf("No LLM providers available, using heuristics")
@@ -93,7 +128,7 @@ func (c *Client) DetermineStrategy(userPrompt string, analysis *types.Analysis) 
 	// Generate using provider manager (with automatic fallback)
 	resp, err := c.providerManager.Generate(ctx, req)
 	if err != nil {
-		// If all providers fail, fall back to heuristics
+		// TIER 3: If all providers fail, fall back to heuristics
 		logger.Printf("All LLM providers failed: %v, using heuristics", err)
 		strategy := c.fallbackStrategy(analysis)
 		return strategy, nil
@@ -103,7 +138,7 @@ func (c *Client) DetermineStrategy(userPrompt string, analysis *types.Analysis) 
 	strategy, reason := c.parseStrategyResponse(resp.Text)
 
 	if strategy == "" {
-		// Fallback to heuristics if LLM response is unclear
+		// TIER 3: Fallback to heuristics if LLM response is unclear
 		strategy = c.fallbackStrategy(analysis)
 		reason = "Fallback heuristic (LLM response unclear)"
 		if analysis.Verbose {
