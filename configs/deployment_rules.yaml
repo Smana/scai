@@ -55,7 +55,7 @@ rules:
     priority: 70
     description: Django apps typically need traditional deployment
     conditions:
-      framework: django
+      framework: [django]
       has_dockerfile: false
     recommendation: vm
     instance_type: t3.small
@@ -66,7 +66,7 @@ rules:
     priority: 70
     description: Rails apps need traditional deployment
     conditions:
-      framework: rails
+      framework: [rails]
     recommendation: vm
     instance_type: t3.small
     reason: Traditional Rails application with asset pipeline and database
@@ -89,7 +89,7 @@ rules:
     priority: 60
     description: Next.js SSR applications
     conditions:
-      framework: nextjs
+      framework: [nextjs]
     recommendation: vm
     instance_type: t3.small
     reason: Next.js SSR application with moderate resource requirements
