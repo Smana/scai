@@ -268,6 +268,8 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 	planConfig.WorkDir = workDir
 	planConfig.TerraformBin = tfBin
 	planConfig.Verbose = verbose
+	planConfig.LLMProvider = providerConfig.Type
+	planConfig.LLMModel = getLLMModel(providerConfig)
 
 	deployConfig := planConfig
 
@@ -448,4 +450,18 @@ Run 'scia init' to configure a different LLM provider.`, providerType)
 	}
 
 	return providerManager, providerConfig, nil
+}
+
+// getLLMModel returns the active model name based on provider type
+func getLLMModel(config *llm.ProviderConfig) string {
+	switch config.Type {
+	case providerTypeOllama:
+		return config.OllamaModel
+	case providerTypeGemini:
+		return config.GeminiModel
+	case providerTypeOpenAI:
+		return config.OpenAIModel
+	default:
+		return ""
+	}
 }

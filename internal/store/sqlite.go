@@ -146,9 +146,10 @@ func (s *SQLiteStore) Create(ctx context.Context, deployment *Deployment) error 
 		INSERT INTO deployments (
 			id, app_name, user_prompt, repo_url, repo_commit_sha,
 			strategy, region, status, terraform_state_key, terraform_dir,
+			llm_provider, llm_model,
 			analysis_json, config_json, outputs_json, warnings_json, optimizations_json,
 			error_message, created_at, updated_at, deployed_at, destroyed_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`,
 		deployment.ID,
 		deployment.AppName,
@@ -160,6 +161,8 @@ func (s *SQLiteStore) Create(ctx context.Context, deployment *Deployment) error 
 		deployment.Status,
 		deployment.TerraformStateKey,
 		deployment.TerraformDir,
+		deployment.LLMProvider,
+		deployment.LLMModel,
 		analysisJSON,
 		configJSON,
 		outputsJSON,
@@ -183,11 +186,13 @@ func (s *SQLiteStore) Create(ctx context.Context, deployment *Deployment) error 
 func (s *SQLiteStore) Get(ctx context.Context, id string) (*Deployment, error) {
 	var deployment Deployment
 	var analysisJSON, configJSON, outputsJSON, warningsJSON, optimizationsJSON []byte
+	var llmProvider, llmModel sql.NullString
 
 	err := s.db.QueryRowContext(ctx, `
 		SELECT
 			id, app_name, user_prompt, repo_url, repo_commit_sha,
 			strategy, region, status, terraform_state_key, terraform_dir,
+			llm_provider, llm_model,
 			analysis_json, config_json, outputs_json, warnings_json, optimizations_json,
 			error_message, created_at, updated_at, deployed_at, destroyed_at
 		FROM deployments
@@ -203,6 +208,8 @@ func (s *SQLiteStore) Get(ctx context.Context, id string) (*Deployment, error) {
 		&deployment.Status,
 		&deployment.TerraformStateKey,
 		&deployment.TerraformDir,
+		&llmProvider,
+		&llmModel,
 		&analysisJSON,
 		&configJSON,
 		&outputsJSON,
@@ -214,6 +221,14 @@ func (s *SQLiteStore) Get(ctx context.Context, id string) (*Deployment, error) {
 		&deployment.DeployedAt,
 		&deployment.DestroyedAt,
 	)
+
+	// Convert sql.NullString to string
+	if llmProvider.Valid {
+		deployment.LLMProvider = llmProvider.String
+	}
+	if llmModel.Valid {
+		deployment.LLMModel = llmModel.String
+	}
 
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("deployment not found: %s", id)
@@ -253,6 +268,7 @@ func buildListQuery(filter *DeploymentFilter) (query string, args []interface{})
 		SELECT
 			id, app_name, user_prompt, repo_url, repo_commit_sha,
 			strategy, region, status, terraform_state_key, terraform_dir,
+			llm_provider, llm_model,
 			analysis_json, config_json, outputs_json, warnings_json, optimizations_json,
 			error_message, created_at, updated_at, deployed_at, destroyed_at
 		FROM deployments
@@ -300,6 +316,7 @@ func (s *SQLiteStore) List(ctx context.Context, filter *DeploymentFilter) ([]*De
 	for rows.Next() {
 		var deployment Deployment
 		var analysisJSON, configJSON, outputsJSON, warningsJSON, optimizationsJSON []byte
+		var llmProvider, llmModel sql.NullString
 
 		err := rows.Scan(
 			&deployment.ID,
@@ -312,6 +329,8 @@ func (s *SQLiteStore) List(ctx context.Context, filter *DeploymentFilter) ([]*De
 			&deployment.Status,
 			&deployment.TerraformStateKey,
 			&deployment.TerraformDir,
+			&llmProvider,
+			&llmModel,
 			&analysisJSON,
 			&configJSON,
 			&outputsJSON,
@@ -326,6 +345,14 @@ func (s *SQLiteStore) List(ctx context.Context, filter *DeploymentFilter) ([]*De
 
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan deployment: %w", err)
+		}
+
+		// Convert sql.NullString to string
+		if llmProvider.Valid {
+			deployment.LLMProvider = llmProvider.String
+		}
+		if llmModel.Valid {
+			deployment.LLMModel = llmModel.String
 		}
 
 		// Deserialize JSON fields
@@ -400,6 +427,8 @@ func (s *SQLiteStore) Update(ctx context.Context, deployment *Deployment) error 
 			status = ?,
 			terraform_state_key = ?,
 			terraform_dir = ?,
+			llm_provider = ?,
+			llm_model = ?,
 			analysis_json = ?,
 			config_json = ?,
 			outputs_json = ?,
@@ -420,6 +449,8 @@ func (s *SQLiteStore) Update(ctx context.Context, deployment *Deployment) error 
 		deployment.Status,
 		deployment.TerraformStateKey,
 		deployment.TerraformDir,
+		deployment.LLMProvider,
+		deployment.LLMModel,
 		analysisJSON,
 		configJSON,
 		outputsJSON,

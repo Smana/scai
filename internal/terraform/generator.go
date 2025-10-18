@@ -271,9 +271,14 @@ output "security_group_id" {
   value       = module.security_group.security_group_id
 }
 
-output "application_url" {
-  description = "Application URL (note: may take a few minutes for instance to be ready)"
-  value       = "App will be available on port %d after instance launches"
+output "asg_id" {
+  description = "Auto Scaling Group ID"
+  value       = module.asg.autoscaling_group_id
+}
+
+output "application_port" {
+  description = "Application port number"
+  value       = "%d"
 }
 `,
 		config.AppName,           // Line 1: Comment
@@ -291,7 +296,7 @@ output "application_url" {
 		config.VolumeSize,   // volume size
 		userData,            // user-data script
 		config.AppName,      // instance tag
-		config.Port,         // application URL port
+		config.Port,         // application_port output
 	)
 
 	return os.WriteFile(filepath.Join(g.outputDir, "main.tf"), []byte(mainTF), 0o644)

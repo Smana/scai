@@ -100,9 +100,12 @@ func runDestroy(cmd *cobra.Command, args []string) error {
 	if verbose {
 		pterm.Debug.Printf("Terraform directory: %s\n", deployment.TerraformDir)
 	}
+	pterm.Info.Println("This may take several minutes...")
+	pterm.Println()
 
 	tfBin := viper.GetString("terraform.bin")
-	executor, err := terraform.NewExecutor(deployment.TerraformDir, tfBin, verbose)
+	// Always use verbose for destroy to show progress
+	executor, err := terraform.NewExecutor(deployment.TerraformDir, tfBin, true)
 	if err != nil {
 		return fmt.Errorf("failed to create terraform executor: %w", err)
 	}

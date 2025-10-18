@@ -31,6 +31,10 @@ type Deployment struct {
 	TerraformStateKey string
 	TerraformDir      string
 
+	// LLM information
+	LLMProvider string
+	LLMModel    string
+
 	// Serialized as JSON
 	Analysis      *types.Analysis
 	Config        *types.TerraformConfig
