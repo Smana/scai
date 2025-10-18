@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.1](https://github.com/Smana/scia/compare/v0.5.0...v0.5.1) (2025-10-18)
+
+
+### Bug Fixes
+
+* restore essential OpenTofu modules and fix YAML parsing ([bbf054a](https://github.com/Smana/scia/commit/bbf054a512d8ced1617f937950f4f30d8fc746a1))
+* restore essential OpenTofu modules and fix YAML parsing ([f36182b](https://github.com/Smana/scia/commit/f36182b5e5225b00c27a42f1d8e862c1fb2f6e1a))
+
 ## [0.5.0](https://github.com/Smana/scia/compare/v0.4.0...v0.5.0) (2025-10-18)
 
 
