@@ -39,7 +39,6 @@ func (m *S3Manager) BucketExists(ctx context.Context, bucketName string) (bool, 
 	_, err := m.client.HeadBucket(ctx, &s3.HeadBucketInput{
 		Bucket: aws.String(bucketName),
 	})
-
 	if err != nil {
 		// Check if it's a "not found" error
 		return false, nil

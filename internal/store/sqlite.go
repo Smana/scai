@@ -174,7 +174,6 @@ func (s *SQLiteStore) Create(ctx context.Context, deployment *Deployment) error 
 		deployment.DeployedAt,
 		deployment.DestroyedAt,
 	)
-
 	if err != nil {
 		return fmt.Errorf("failed to insert deployment: %w", err)
 	}
@@ -342,7 +341,6 @@ func (s *SQLiteStore) List(ctx context.Context, filter *DeploymentFilter) ([]*De
 			&deployment.DeployedAt,
 			&deployment.DestroyedAt,
 		)
-
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan deployment: %w", err)
 		}
@@ -462,7 +460,6 @@ func (s *SQLiteStore) Update(ctx context.Context, deployment *Deployment) error 
 		deployment.DestroyedAt,
 		deployment.ID,
 	)
-
 	if err != nil {
 		return fmt.Errorf("failed to update deployment: %w", err)
 	}
@@ -491,7 +488,6 @@ func (s *SQLiteStore) UpdateStatus(ctx context.Context, id string, status Deploy
 			destroyed_at = COALESCE(destroyed_at, ?)
 		WHERE id = ?
 	`, status, errorMessage, now, deployedAt, destroyedAt, id)
-
 	if err != nil {
 		return fmt.Errorf("failed to update deployment status: %w", err)
 	}

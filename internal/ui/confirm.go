@@ -29,7 +29,6 @@ func ConfirmDeployment(plan *DeploymentPlan, skipConfirmation bool) (bool, error
 		WithConfirmText("Yes").
 		WithRejectText("No").
 		Show()
-
 	if err != nil {
 		return false, fmt.Errorf("confirmation prompt failed: %w", err)
 	}
@@ -115,7 +114,6 @@ func DisplayPlanTable(plan *DeploymentPlan) error {
 		WithBoxed(true).
 		WithData(tableData).
 		Render()
-
 	if err != nil {
 		return fmt.Errorf("failed to render table: %w", err)
 	}

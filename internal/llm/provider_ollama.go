@@ -106,7 +106,6 @@ func (p *OllamaProvider) Generate(ctx context.Context, req *GenerateRequest) (*G
 
 		return nil
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("ollama generation failed: %w", err)
 	}
