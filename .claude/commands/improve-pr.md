@@ -347,7 +347,7 @@ After applying changes:
 # Run any available tests
 if [ -f "package.json" ]; then npm test; fi
 if [ -f "pytest.ini" ]; then pytest; fi
-if [ -f "Makefile" ]; then make test; fi
+if [ -f "Taskfile.yml" ]; then task test; fi
 
 # Check syntax
 # Language-specific linting commands

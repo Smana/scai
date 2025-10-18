@@ -43,21 +43,50 @@ task build  # requires Task runner: https://taskfile.dev
 sudo cp scia /usr/local/bin/
 ```
 
-### Deploy Your First Application
+### Quick Start
+
+**1. Initialize SCIA** (one-time setup)
 
 ```bash
-# SCIA automatically sets up Ollama in Docker on first run
-./scia deploy "Deploy this Flask app" https://github.com/Arvo-AI/hello_world
+scia init
 ```
 
-**First run will:**
-- Pull and start Ollama Docker container
-- Download the qwen2.5-coder:7b model (~4GB)
-- Analyze the repository
-- Generate and apply Terraform configuration
-- Return your deployment URL
+This will:
+- Configure your LLM provider (Ollama, Gemini, or OpenAI)
+- Set up Terraform backend for state storage (optional)
+- Validate AWS credentials and requirements
 
-**Example output:**
+**2. Deploy your first application**
+
+```bash
+scia deploy "Deploy this Flask app" https://github.com/Arvo-AI/hello_world
+```
+
+SCIA will automatically:
+- Set up Ollama in Docker (if needed)
+- Download the AI model (~4GB on first run)
+- Analyze and deploy your application
+
+**3. Manage your deployments**
+
+```bash
+# List all deployments
+scia list
+
+# Show detailed deployment info
+scia show <deployment-id>
+
+# View deployment outputs (URLs, IPs)
+scia outputs <deployment-id>
+
+# Check deployment status
+scia status <deployment-id>
+
+# Destroy a deployment
+scia destroy <deployment-id>
+```
+
+### Example Deployment Session
 ```
 🐳 Setting up Ollama with Docker...
 Creating Ollama container...
@@ -98,6 +127,54 @@ Proceed with deployment? [y/N]: y
    Consider using Gunicorn for production
 
 🎉 Success! Your application is now deployed.
+```
+
+### Example: Managing Deployments
+
+```bash
+# List all your deployments
+$ scia list
+Found 3 deployment(s):
+
+ID                                    APP NAME              STRATEGY    REGION        STATUS         CREATED
+a1b2c3d4-e5f6-7890-abcd-ef1234567890  hello-world           vm          us-east-1     ✅ succeeded   2025-10-18 14:23
+b2c3d4e5-f6a7-8901-bcde-f12345678901  api-service           vm          eu-west-1     ✅ succeeded   2025-10-18 13:45
+c3d4e5f6-a7b8-9012-cdef-123456789012  microservices         kubernetes  us-west-2     🔄 running     2025-10-18 15:10
+
+Use 'scia show <deployment-id>' to see detailed information
+
+# Show detailed deployment information
+$ scia show a1b2c3d4
+═══════════════════════════════════════════════════════════════
+  DEPLOYMENT: hello-world
+═══════════════════════════════════════════════════════════════
+
+📋 Basic Information:
+   ID:           a1b2c3d4-e5f6-7890-abcd-ef1234567890
+   App Name:     hello-world
+   Status:       ✅ succeeded
+   Strategy:     vm
+   Region:       us-east-1
+
+🔗 Outputs:
+   public_url: http://54.123.45.67:5000
+
+# Destroy when done
+$ scia destroy a1b2c3d4
+═══════════════════════════════════════════════════════════════
+  DESTROY DEPLOYMENT: hello-world
+═══════════════════════════════════════════════════════════════
+
+   ID:           a1b2c3d4-e5f6-7890-abcd-ef1234567890
+   Strategy:     vm
+   Region:       us-east-1
+
+⚠️  WARNING: This will destroy all infrastructure resources!
+
+Do you want to proceed? (yes/no): yes
+
+🔥 Destroying infrastructure...
+✅ Deployment destroyed successfully!
 ```
 
 ## 🧠 How It Works
@@ -154,29 +231,59 @@ SCIA understands infrastructure specifications in your prompts:
 ./scia --verbose deploy "Deploy app" https://github.com/your-org/app
 ```
 
-### Configuration File
+### Configuration
 
-Create `~/.scia.yaml` for persistent configuration:
+**Using `scia init` (Recommended)**
+
+The easiest way to configure SCIA:
+
+```bash
+scia init
+```
+
+This interactive command will:
+- Configure your LLM provider (Ollama, Gemini, or OpenAI)
+- Set up S3 backend for Terraform state (optional)
+- Validate your AWS credentials
+- Create `~/.scia.yaml` with your preferences
+
+**Manual Configuration**
+
+You can also create `~/.scia.yaml` manually:
 
 ```yaml
-workdir: /tmp/scia
-verbose: false
+llm:
+  provider: ollama  # or "gemini", "openai"
+  ollama:
+    model: qwen2.5-coder:7b
+    use_docker: true
+  # For Gemini:
+  # gemini:
+  #   api_key: your-api-key
+  #   model: gemini-2.0-pro-exp
+  # For OpenAI:
+  # openai:
+  #   api_key: your-api-key
+  #   model: gpt-4o
 
-ollama:
-  model: qwen2.5-coder:7b
-  use_docker: true  # Use Docker for Ollama (default)
-
-aws:
-  region: us-east-1
+cloud:
+  provider: aws
+  default_region: us-east-1
 
 terraform:
   bin: tofu  # or "terraform"
+  backend:
+    type: s3
+    s3_bucket: my-terraform-state-bucket
+    s3_region: us-east-1
 ```
 
-Environment variables override config file (use `SCIA_` prefix):
+**Environment Variables**
+
+Override any config with environment variables (use `SCIA_` prefix):
 ```bash
-export SCIA_AWS_REGION=eu-west-1
-export SCIA_OLLAMA_MODEL=qwen2.5-coder:7b
+export SCIA_LLM_PROVIDER=ollama
+export SCIA_CLOUD_DEFAULT_REGION=eu-west-1
 export SCIA_VERBOSE=true
 ```
 
@@ -200,12 +307,16 @@ task ci
 ```
 
 **Project structure:**
-- `cmd/` - CLI commands and entry point
+- `cmd/` - CLI commands (deploy, list, show, destroy, init, etc.)
 - `internal/analyzer/` - Repository analysis and framework detection
 - `internal/llm/` - AI decision engine with knowledge base
-- `internal/terraform/` - Infrastructure provisioning and templates
+- `internal/terraform/` - Infrastructure provisioning (inline generation)
 - `internal/parser/` - Natural language prompt parsing
 - `internal/deployer/` - Orchestration and health checking
+- `internal/store/` - SQLite database for deployment tracking
+- `internal/backend/` - Terraform backend configuration (S3)
+- `internal/config/` - Configuration management and validation
+- `internal/cloud/` - Cloud provider abstractions (AWS, GCP)
 
 See [CLAUDE.md](CLAUDE.md) for detailed architecture and contribution guidelines.
 
@@ -283,16 +394,22 @@ ollama pull qwen2.5-coder:7b
 
 ## 🗺️ Roadmap
 
-- [x] EC2 VM deployments
+- [x] EC2 VM deployments with Auto Scaling Groups
 - [x] Natural language prompt parsing
 - [x] Docker-based Ollama integration
-- [x] LLM-powered deployment decisions
-- [ ] EKS Kubernetes deployments (in progress)
-- [ ] AWS Lambda serverless deployments
+- [x] LLM-powered deployment decisions with knowledge base
+- [x] Multi-provider LLM support (Ollama, Gemini, OpenAI)
+- [x] Deployment tracking with SQLite database
+- [x] Deployment management (list, show, destroy, outputs, status)
+- [x] Interactive configuration with `scia init`
+- [x] Terraform state management with S3 backend
+- [ ] EKS Kubernetes deployments (code ready, needs testing)
+- [ ] AWS Lambda serverless deployments (code ready, needs testing)
 - [ ] Support for GCP and Azure
 - [ ] Cost estimation before deployment
 - [ ] Deployment rollback mechanism
 - [ ] Private GitHub repository support
+- [ ] Web UI for deployment management
 
 ## 📄 License
 

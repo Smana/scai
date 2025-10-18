@@ -23,8 +23,8 @@ tasks:
       - |
         dagger call -m {{.DAGGER_GO_MODULE}} \
           with-source --source=. \
-          with-module-cache \
-          with-build-cache \
+          with-module-cache --cache=module-cache \
+          with-build-cache --cache=build-cache \
           build \
           export --path={{.BINARY_NAME}}
     sources:
@@ -131,16 +131,16 @@ tasks:
     cmds:
       - grep "^go " go.mod | awk '{print $2}'
 
-  container:
-    desc: Build container with the SCIA binary
-    cmds:
-      - |
-        dagger call -m {{.DAGGER_GO_MODULE}} \
-          with-source --source=. \
-          with-module-cache \
-          with-build-cache \
-          build \
-          as-service
+  # container:
+  #   desc: Build container with the SCIA binary (disabled - using binaries only for now)
+  #   cmds:
+  #     - |
+  #       dagger call -m {{.DAGGER_GO_MODULE}} \
+  #         with-source --source=. \
+  #         with-module-cache --cache=module-cache \
+  #         with-build-cache --cache=build-cache \
+  #         build \
+  #         as-service
 
   help:
     desc: Show all available tasks

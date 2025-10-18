@@ -174,11 +174,29 @@ func extractLambdaMemory(prompt string) int {
 
 // extractVolumeSize extracts volume size in GB
 func extractVolumeSize(prompt string) int {
-	// Pattern: "20GB volume", "30 GB disk", "50GB storage"
+	// Pattern 1: "20GB volume", "30 GB disk", "50GB storage"
 	re := regexp.MustCompile(`\b(\d+)\s*(?:GB|gb)\s+(?:volume|disk|storage)\b`)
 	if matches := re.FindStringSubmatch(prompt); len(matches) > 1 {
 		gb, _ := strconv.Atoi(matches[1])
 		return gb
+	}
+
+	// Pattern 2: "volume 30GB", "disk 50 GB", "storage 100GB"
+	re = regexp.MustCompile(`\b(?:volume|disk|storage)\s+(\d+)\s*(?:GB|gb)\b`)
+	if matches := re.FindStringSubmatch(prompt); len(matches) > 1 {
+		gb, _ := strconv.Atoi(matches[1])
+		return gb
+	}
+
+	// Pattern 3: Just "30GB" or "50 GB" (when likely referring to storage)
+	// This pattern is more general, so we check if it's in a storage context
+	re = regexp.MustCompile(`\b(\d+)\s*(?:GB|gb)\b`)
+	if matches := re.FindStringSubmatch(prompt); len(matches) > 1 {
+		gb, _ := strconv.Atoi(matches[1])
+		// Only accept if it's a reasonable volume size (10-1000 GB)
+		if gb >= 10 && gb <= 1000 {
+			return gb
+		}
 	}
 
 	return 0

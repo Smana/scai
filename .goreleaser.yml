@@ -46,51 +46,6 @@ archives:
       - CLAUDE.md
       - configs/**/*
 
-dockers:
-  - id: scia-amd64
-    image_templates:
-      - "ghcr.io/smana/scia:{{ .Version }}-amd64"
-      - "ghcr.io/smana/scia:latest-amd64"
-    dockerfile: Dockerfile.goreleaser
-    use: buildx
-    build_flag_templates:
-      - --platform=linux/amd64
-      - --label=org.opencontainers.image.title={{ .ProjectName }}
-      - --label=org.opencontainers.image.description=Smart Cloud Infrastructure Automation - AI-powered deployment strategy tool
-      - --label=org.opencontainers.image.url=https://github.com/{{ .Env.GITHUB_REPOSITORY }}
-      - --label=org.opencontainers.image.source=https://github.com/{{ .Env.GITHUB_REPOSITORY }}
-      - --label=org.opencontainers.image.version={{ .Version }}
-      - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
-      - --label=org.opencontainers.image.revision={{ .FullCommit }}
-      - --label=org.opencontainers.image.licenses=MIT
-
-  - id: scia-arm64
-    image_templates:
-      - "ghcr.io/smana/scia:{{ .Version }}-arm64"
-      - "ghcr.io/smana/scia:latest-arm64"
-    dockerfile: Dockerfile.goreleaser
-    use: buildx
-    build_flag_templates:
-      - --platform=linux/arm64
-      - --label=org.opencontainers.image.title={{ .ProjectName }}
-      - --label=org.opencontainers.image.description=Smart Cloud Infrastructure Automation - AI-powered deployment strategy tool
-      - --label=org.opencontainers.image.url=https://github.com/{{ .Env.GITHUB_REPOSITORY }}
-      - --label=org.opencontainers.image.source=https://github.com/{{ .Env.GITHUB_REPOSITORY }}
-      - --label=org.opencontainers.image.version={{ .Version }}
-      - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
-      - --label=org.opencontainers.image.revision={{ .FullCommit }}
-      - --label=org.opencontainers.image.licenses=MIT
-
-docker_manifests:
-  - name_template: "ghcr.io/smana/scia:{{ .Version }}"
-    image_templates:
-      - "ghcr.io/smana/scia:{{ .Version }}-amd64"
-      - "ghcr.io/smana/scia:{{ .Version }}-arm64"
-  - name_template: "ghcr.io/smana/scia:latest"
-    image_templates:
-      - "ghcr.io/smana/scia:latest-amd64"
-      - "ghcr.io/smana/scia:latest-arm64"
-
 checksum:
   name_template: "checksums.txt"
 
@@ -141,15 +96,6 @@ release:
     go install github.com/Smana/scia@{{ .Tag }}
     ```
 
-    #### Container Images
-    ```bash
-    # Pull the latest release
-    docker pull ghcr.io/smana/scia:{{ .Version }}
-
-    # Run a deployment
-    docker run ghcr.io/smana/scia:{{ .Version }} deploy "Deploy Flask app" https://github.com/example/repo
-    ```
-
     #### Verify Checksums
     ```bash
     sha256sum -c checksums.txt
@@ -159,7 +105,6 @@ release:
     ### 📚 Documentation
 
     - [Project Instructions](https://github.com/{{ .Env.GITHUB_REPOSITORY }}/blob/{{ .Tag }}/CLAUDE.md)
-    - [Implementation Status](https://github.com/{{ .Env.GITHUB_REPOSITORY }}/blob/{{ .Tag }}/IMPLEMENTATION_STATUS.md)
 
     ---
 

@@ -4,8 +4,11 @@ package types
 type Analysis struct {
 	RepoURL          string
 	RepoPath         string
+	AppDir           string // Subdirectory containing the main application code (relative to RepoPath)
+	CommitSHA        string // Git commit SHA (if cloned from Git)
 	Framework        string
 	Language         string
+	PackageManager   string // Package manager: "pip", "poetry", "uv", "pipenv", "npm", "yarn", etc.
 	Dependencies     []string
 	StartCommand     string
 	Port             int
@@ -26,6 +29,7 @@ type TerraformConfig struct {
 	Language     string
 	Port         int
 	RepoURL      string
+	AppDir       string // Subdirectory containing the main application code
 	StartCommand string
 	EnvVars      map[string]string
 

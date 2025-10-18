@@ -1,10 +1,17 @@
 package deployer
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
+	"time"
 
+	"github.com/google/uuid"
+	"github.com/spf13/viper"
+
+	"github.com/Smana/scia/internal/backend"
 	"github.com/Smana/scia/internal/llm"
+	"github.com/Smana/scia/internal/store"
 	"github.com/Smana/scia/internal/terraform"
 	"github.com/Smana/scia/internal/types"
 )
@@ -40,17 +47,63 @@ type DeployConfig struct {
 type Deployer struct {
 	config    *DeployConfig
 	llmClient *llm.Client
+	store     store.Store
 }
 
 // NewDeployer creates a new Deployer instance
-func NewDeployer(config *DeployConfig) *Deployer {
+func NewDeployer(config *DeployConfig, storeInstance store.Store) *Deployer {
 	return &Deployer{
 		config: config,
+		store:  storeInstance,
 	}
+}
+
+// SetLLMClient sets the LLM client for the deployer
+func (d *Deployer) SetLLMClient(client *llm.Client) {
+	d.llmClient = client
 }
 
 // Deploy executes the deployment workflow
 func (d *Deployer) Deploy() (*types.DeploymentResult, error) {
+	ctx := context.Background()
+
+	// Generate unique deployment ID
+	deploymentID := uuid.New().String()
+
+	// Create deployment record with status "running"
+	deployment := &store.Deployment{
+		ID:                deploymentID,
+		AppName:           d.extractAppName(),
+		UserPrompt:        d.config.UserPrompt,
+		RepoURL:           d.config.Analysis.RepoURL,
+		RepoCommitSHA:     d.config.Analysis.CommitSHA,
+		Strategy:          d.config.Strategy,
+		Region:            d.config.AWSRegion,
+		Status:            store.DeploymentStatusRunning,
+		TerraformStateKey: fmt.Sprintf("deployments/%s/terraform.tfstate", deploymentID),
+		TerraformDir:      "",
+		Analysis:          d.config.Analysis,
+		Config:            nil,
+		Outputs:           make(map[string]string),
+		Warnings:          []string{},
+		Optimizations:     []string{},
+		ErrorMessage:      "",
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+		DeployedAt:        nil,
+		DestroyedAt:       nil,
+	}
+
+	if d.store != nil {
+		if err := d.store.Create(ctx, deployment); err != nil {
+			return nil, fmt.Errorf("failed to create deployment record: %w", err)
+		}
+
+		if d.config.Verbose {
+			fmt.Printf("   Created deployment record: %s\n", deploymentID)
+		}
+	}
+
 	// Create terraform directory
 	tfDir := filepath.Join(d.config.WorkDir, "terraform")
 
@@ -69,6 +122,7 @@ func (d *Deployer) Deploy() (*types.DeploymentResult, error) {
 		Language:     d.config.Analysis.Language,
 		Port:         d.config.Analysis.Port,
 		RepoURL:      d.config.Analysis.RepoURL,
+		AppDir:       d.config.Analysis.AppDir,
 		StartCommand: d.config.Analysis.StartCommand,
 		EnvVars:      d.config.Analysis.EnvVars,
 
@@ -98,7 +152,29 @@ func (d *Deployer) Deploy() (*types.DeploymentResult, error) {
 	}
 
 	if err := generator.Generate(tfConfig); err != nil {
+		// Update deployment status to failed
+		if d.store != nil {
+			_ = d.store.UpdateStatus(ctx, deploymentID, store.DeploymentStatusFailed, err.Error())
+		}
 		return nil, fmt.Errorf("failed to generate Terraform config: %w", err)
+	}
+
+	// Update deployment record with config and terraform directory
+	deployment.Config = tfConfig
+	deployment.TerraformDir = tfDir
+	if d.store != nil {
+		if err := d.store.Update(ctx, deployment); err != nil {
+			return nil, fmt.Errorf("failed to update deployment record: %w", err)
+		}
+	}
+
+	// Generate backend.tf for S3 state storage (if configured)
+	if err := d.generateBackend(tfDir, deployment.TerraformStateKey); err != nil {
+		// Update deployment status to failed
+		if d.store != nil {
+			_ = d.store.UpdateStatus(ctx, deploymentID, store.DeploymentStatusFailed, err.Error())
+		}
+		return nil, fmt.Errorf("failed to generate backend configuration: %w", err)
 	}
 
 	// Execute Terraform
@@ -108,20 +184,36 @@ func (d *Deployer) Deploy() (*types.DeploymentResult, error) {
 
 	executor, err := terraform.NewExecutor(tfDir, d.config.TerraformBin, d.config.Verbose)
 	if err != nil {
+		// Update deployment status to failed
+		if d.store != nil {
+			_ = d.store.UpdateStatus(ctx, deploymentID, store.DeploymentStatusFailed, err.Error())
+		}
 		return nil, fmt.Errorf("failed to create terraform executor: %w", err)
 	}
 
 	if err := executor.Init(); err != nil {
+		// Update deployment status to failed
+		if d.store != nil {
+			_ = d.store.UpdateStatus(ctx, deploymentID, store.DeploymentStatusFailed, fmt.Sprintf("terraform init failed: %v", err))
+		}
 		return nil, fmt.Errorf("terraform init failed: %w", err)
 	}
 
 	if err := executor.Apply(); err != nil {
+		// Update deployment status to failed
+		if d.store != nil {
+			_ = d.store.UpdateStatus(ctx, deploymentID, store.DeploymentStatusFailed, fmt.Sprintf("terraform apply failed: %v", err))
+		}
 		return nil, fmt.Errorf("terraform apply failed: %w", err)
 	}
 
 	// Get outputs
 	outputs, err := executor.Outputs()
 	if err != nil {
+		// Update deployment status to failed
+		if d.store != nil {
+			_ = d.store.UpdateStatus(ctx, deploymentID, store.DeploymentStatusFailed, fmt.Sprintf("failed to get outputs: %v", err))
+		}
 		return nil, fmt.Errorf("failed to get terraform outputs: %w", err)
 	}
 
@@ -139,6 +231,31 @@ func (d *Deployer) Deploy() (*types.DeploymentResult, error) {
 	if d.llmClient != nil {
 		result.Warnings = d.llmClient.ValidateDeploymentRequirements(d.config.Analysis, d.config.Strategy)
 		result.Optimizations = d.llmClient.SuggestOptimizations(d.config.Analysis, d.config.Strategy)
+	}
+
+	// Update deployment record with success status and outputs
+	deployment.Outputs = outputs
+	deployment.Warnings = result.Warnings
+	deployment.Optimizations = result.Optimizations
+	if d.store != nil {
+		if err := d.store.UpdateStatus(ctx, deploymentID, store.DeploymentStatusSucceeded, ""); err != nil {
+			// Log but don't fail deployment
+			if d.config.Verbose {
+				fmt.Printf("   Warning: failed to update deployment status: %v\n", err)
+			}
+		}
+
+		// Update full deployment record
+		if err := d.store.Update(ctx, deployment); err != nil {
+			// Log but don't fail deployment
+			if d.config.Verbose {
+				fmt.Printf("   Warning: failed to update deployment record: %v\n", err)
+			}
+		}
+
+		if d.config.Verbose {
+			fmt.Printf("   ✓ Deployment completed successfully: %s\n", deploymentID)
+		}
 	}
 
 	return result, nil
@@ -166,4 +283,55 @@ func (d *Deployer) extractAppName() string {
 	}
 
 	return "scia-app"
+}
+
+// generateBackend generates the backend.tf file for S3 state storage
+func (d *Deployer) generateBackend(tfDir string, deploymentStateKey string) error {
+	// Read backend configuration from viper
+	backendType := viper.GetString("terraform.backend.type")
+
+	// Only generate backend.tf if S3 backend is configured
+	if backendType != "s3" {
+		if d.config.Verbose {
+			fmt.Printf("   No S3 backend configured, using local state\n")
+		}
+		return nil
+	}
+
+	s3Bucket := viper.GetString("terraform.backend.s3_bucket")
+	s3Region := viper.GetString("terraform.backend.s3_region")
+
+	// Validate required fields
+	if s3Bucket == "" || s3Region == "" {
+		if d.config.Verbose {
+			fmt.Printf("   S3 backend not fully configured, using local state\n")
+		}
+		return nil
+	}
+
+	// Use deployment-specific S3 key (e.g., deployments/<uuid>/terraform.tfstate)
+	s3Key := deploymentStateKey
+
+	if d.config.Verbose {
+		fmt.Printf("   Configuring S3 backend: bucket=%s, region=%s, key=%s\n",
+			s3Bucket, s3Region, s3Key)
+	}
+
+	// Generate backend.tf
+	backendCfg := backend.BackendTFConfig{
+		BucketName: s3Bucket,
+		Region:     s3Region,
+		Key:        s3Key,
+	}
+
+	backendFile, err := backend.WriteBackendTF(tfDir, backendCfg)
+	if err != nil {
+		return err
+	}
+
+	if d.config.Verbose {
+		fmt.Printf("   ✓ Generated backend.tf at %s\n", backendFile)
+	}
+
+	return nil
 }

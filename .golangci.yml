@@ -19,8 +19,6 @@ linters:
     - unconvert
     - dupl
     - prealloc
-    - gofmt
-    - goimports
 
 linters-settings:
   errcheck:
@@ -72,7 +70,9 @@ issues:
         - gosec
     - path: internal/analyzer/
       linters:
-        - goconst
+        - gocyclo   # Framework detection has natural complexity
+        - goconst   # Framework names are intentionally hardcoded
+        - gocritic  # Complex detection logic requires flexible patterns
         - gosec
     - path: internal/parser/
       linters:

@@ -40,21 +40,17 @@ Before generating the description:
 Create a comprehensive PR description with the following structure:
 
 ```markdown
-## 🔍 PR Type: [type]
-
-**Type**: `feat` | `fix` | `docs` | `refactor` | `perf` | `test` | `chore` | `ci` | `security`
+## 🔍 Type: `[type]`
 
 ## 📝 Summary
 
-[2-3 sentence concise summary explaining WHAT this PR does and WHY it's needed]
+[1-2 sentences explaining WHAT this PR does and WHY]
 
-## 🎯 Changes Overview
+## 🎯 Key Changes
 
-- **Main change 1**: Brief description
-- **Main change 2**: Brief description
-- **Main change 3**: Brief description
-- **Main change 4**: Brief description
-- **Main change 5**: Brief description
+- **[Component]**: Brief description
+- **[Component]**: Brief description
+- **[Component]**: Brief description
 
 ## 📊 Architecture Diagram
 
@@ -76,8 +72,8 @@ flowchart LR
     existingComp -- "action/relationship" --> newComp
     newComp -- "data flow" --> modifiedComp
 
-    classDef new fill:#90EE90,stroke:#228B22,stroke-width:2px
-    classDef modified fill:#FFD700,stroke:#FF8C00,stroke-width:2px
+    classDef new fill:#4ADE80,stroke:#16A34A,stroke-width:3px
+    classDef modified fill:#FBBF24,stroke:#F59E0B,stroke-width:3px
     ]
 ```
 
@@ -86,124 +82,47 @@ flowchart LR
 - 🟡 Yellow nodes: Modified components
 - ⚪ White nodes: Existing components (unchanged)
 
-## 🗂️ File Changes Walkthrough
+## 🗂️ Files Changed
 
-| File | Change Type | Lines | Description |
-|------|-------------|-------|-------------|
-| `path/to/file1` | Added | +50 | Brief description of what was added |
-| `path/to/file2` | Modified | +30/-20 | Brief description of modifications |
-| `path/to/file3` | Deleted | -40 | Brief description of why removed |
+| File | Lines | Description |
+|------|-------|-------------|
+| `path/to/file1` | +50 | Brief description |
+| `path/to/file2` | +30/-20 | Brief description |
 
 <details>
-<summary><b>📄 Detailed File-by-File Changes</b></summary>
+<summary><b>📄 Detailed Changes (expand if needed)</b></summary>
 
-### 📁 Category 1: [Component/Module Name]
-
-#### `path/to/file1.ext`
-**Purpose**: [What this file does in the system]
-
-**Changes**:
-- ✨ Added: [Specific addition with line reference]
-- 🔧 Modified: [Specific modification with line reference]
-- 🔥 Removed: [Specific removal with reason]
-
+### `path/to/file1.ext`
+**Changes**: [Key changes with line references if important]
 **Impact**: [How this affects the system]
 
----
-
-#### `path/to/file2.ext`
-**Purpose**: [What this file does in the system]
-
-**Changes**:
-- ✨ Added: [Specific addition]
-- 🔧 Modified: [Specific modification]
-
-**Impact**: [How this affects the system]
-
----
-
-### 📁 Category 2: [Another Component/Module]
-
-#### `path/to/file3.ext`
-[Same structure as above]
+### `path/to/file2.ext`
+**Changes**: [Key changes]
+**Impact**: [System impact]
 
 </details>
 
-## 🔗 Dependencies
-
-**New Dependencies**:
-- `package@version` - Purpose/reason
-
-**Updated Dependencies**:
-- `package` from `v1.0.0` to `v2.0.0` - Reason for update
-
-**Removed Dependencies**:
-- `old-package` - Reason for removal
-
 ## 🧪 Testing
 
-**Test Coverage**:
-- ✅ Unit tests: [What's covered]
-- ✅ Integration tests: [What's covered]
-- ✅ E2E tests: [What's covered]
-- ⚠️ Manual testing required: [What needs manual verification]
-
-**Test Commands**:
-```bash
-# Command to run tests
-npm test
-# Or
-pytest tests/
-```
-
-## 🔒 Security Considerations
-
-[If applicable, list security implications, new permissions, exposed endpoints, etc.]
+**Commands**: `task test` | **Coverage**: [X%]
 
 ## 💥 Breaking Changes
 
-[If applicable, list breaking changes with migration guide]
+[List if any, otherwise remove this section]
 
-**Migration Steps**:
-1. [Step 1]
-2. [Step 2]
-3. [Step 3]
+## 🏷️ Labels
 
-## 📚 Documentation
-
-**Updated Documentation**:
-- [ ] README.md
-- [ ] API docs
-- [ ] Architecture decision records (ADRs)
-- [ ] Inline code comments
-
-**Documentation Links**:
-- [Related docs link 1]
-- [Related docs link 2]
-
-## 🏷️ Suggested Labels
-
-`enhancement`, `infrastructure`, `needs-review`, `documentation`
+`[type]`, `needs-review`
 
 ## 📋 Checklist
 
-- [ ] Code follows project style guidelines
-- [ ] Self-review completed
-- [ ] Comments added for complex logic
+- [ ] Tests pass
+- [ ] Linting passes
 - [ ] Documentation updated
-- [ ] Tests added/updated
-- [ ] All tests passing
-- [ ] No new warnings
-- [ ] Breaking changes documented
 
-## 🔗 Related Issues
+## 🔗 Related
 
-Closes #[issue-number]
-Relates to #[issue-number]
-
----
-
-**Generated with Claude Code** - AI-powered PR analysis
+Closes #[issue] | Relates to #[issue]
 ```
 
 ### 4. Update the Pull Request
@@ -248,9 +167,9 @@ Output:
 
 **Styling Classes**:
 ```mermaid
-classDef new fill:#90EE90,stroke:#228B22,stroke-width:2px
-classDef modified fill:#FFD700,stroke:#FF8C00,stroke-width:2px
-classDef removed fill:#FFB6C1,stroke:#DC143C,stroke-width:2px,stroke-dasharray: 5 5
+classDef new fill:#4ADE80,stroke:#16A34A,stroke-width:3px
+classDef modified fill:#FBBF24,stroke:#F59E0B,stroke-width:3px
+classDef removed fill:#F87171,stroke:#DC2626,stroke-width:3px,stroke-dasharray: 5 5
 ```
 
 **Example Patterns**:
@@ -265,7 +184,7 @@ flowchart LR
     api -- "authenticate" --> newService
     newService -- "verify credentials" --> db
 
-    classDef new fill:#90EE90,stroke:#228B22,stroke-width:2px
+    classDef new fill:#4ADE80,stroke:#16A34A,stroke-width:3px
 ```
 
 For **refactoring**:
@@ -280,8 +199,8 @@ flowchart LR
     client -- "now uses" --> newFunc
     newFunc -- "optimized query" --> db
 
-    classDef removed fill:#FFB6C1,stroke:#DC143C,stroke-width:2px,stroke-dasharray: 5 5
-    classDef modified fill:#FFD700,stroke:#FF8C00,stroke-width:2px
+    classDef removed fill:#F87171,stroke:#DC2626,stroke-width:3px,stroke-dasharray: 5 5
+    classDef modified fill:#FBBF24,stroke:#F59E0B,stroke-width:3px
 ```
 
 For **infrastructure**:
@@ -297,8 +216,8 @@ flowchart LR
     newInfra -- "metrics" --> monitoring
     monitoring -- "updated dashboards" --> app
 
-    classDef new fill:#90EE90,stroke:#228B22,stroke-width:2px
-    classDef modified fill:#FFD700,stroke:#FF8C00,stroke-width:2px
+    classDef new fill:#4ADE80,stroke:#16A34A,stroke-width:3px
+    classDef modified fill:#FBBF24,stroke:#F59E0B,stroke-width:3px
 ```
 
 ### File Walkthrough Best Practices
@@ -422,8 +341,8 @@ flowchart TB
     newAuth --> db
     api --> cache
 
-    classDef new fill:#90EE90,stroke:#228B22,stroke-width:2px
-    classDef modified fill:#FFD700,stroke:#FF8C00,stroke-width:2px
+    classDef new fill:#4ADE80,stroke:#16A34A,stroke-width:3px
+    classDef modified fill:#FBBF24,stroke:#F59E0B,stroke-width:3px
 ```
 
 ### Deployment Flow
@@ -442,8 +361,8 @@ flowchart LR
     test -- "failed" --> code
     deploy --> prod
 
-    classDef new fill:#90EE90,stroke:#228B22,stroke-width:2px
-    classDef modified fill:#FFD700,stroke:#FF8C00,stroke-width:2px
+    classDef new fill:#4ADE80,stroke:#16A34A,stroke-width:3px
+    classDef modified fill:#FBBF24,stroke:#F59E0B,stroke-width:3px
 ```
 
 ---

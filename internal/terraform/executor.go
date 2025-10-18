@@ -157,18 +157,23 @@ func (e *Executor) runCommand(args ...string) error {
 
 	if e.verbose {
 		fmt.Printf("   Executing: %s %s\n", e.tfBin, strings.Join(args, " "))
-		cmd.Stdout = nil // Let it print to stdout
-		cmd.Stderr = nil // Let it print to stderr
+		// Stream output in real-time to stdout/stderr
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
+		// Run command with live output
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("command failed: %s %s\nError: %w",
+				e.tfBin, strings.Join(args, " "), err)
+		}
+		return nil
 	}
 
+	// Non-verbose mode: capture output
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("command failed: %s %s\nError: %w\nOutput: %s",
 			e.tfBin, strings.Join(args, " "), err, string(output))
-	}
-
-	if e.verbose && len(output) > 0 {
-		fmt.Printf("%s\n", string(output))
 	}
 
 	return nil

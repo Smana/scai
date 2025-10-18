@@ -1,12 +1,16 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/Smana/scia/internal/store"
 )
 
 var (
@@ -19,6 +23,9 @@ var (
 	commit  string
 	date    string
 	builtBy string
+
+	// Global store instance
+	globalStore store.Store
 )
 
 // rootCmd represents the base command
@@ -52,7 +59,7 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
+	cobra.OnInitialize(initConfig, initDatabase)
 
 	// Global flags
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default: $HOME/.scia.yaml)")
@@ -62,6 +69,57 @@ func init() {
 	// Bind flags to Viper
 	_ = viper.BindPFlag("workdir", rootCmd.PersistentFlags().Lookup("work-dir"))
 	_ = viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
+}
+
+// initDatabase initializes the SQLite database for deployment tracking
+func initDatabase() {
+	// Get home directory for database storage
+	home, err := os.UserHomeDir()
+	if err != nil {
+		// Fail silently - database is optional
+		return
+	}
+
+	// Database path: ~/.scia/deployments.db
+	sciaDir := filepath.Join(home, ".scia")
+	dbPath := filepath.Join(sciaDir, "deployments.db")
+
+	// Create .scia directory if it doesn't exist
+	if err := os.MkdirAll(sciaDir, 0o755); err != nil {
+		// Fail silently - database is optional
+		if verbose {
+			fmt.Printf("Warning: failed to create .scia directory: %v\n", err)
+		}
+		return
+	}
+
+	// Create SQLite store
+	sqliteStore, err := store.NewSQLiteStore(dbPath)
+	if err != nil {
+		// Fail silently - database is optional
+		if verbose {
+			fmt.Printf("Warning: failed to create database: %v\n", err)
+		}
+		return
+	}
+
+	// Initialize database schema
+	ctx := context.Background()
+	if err := sqliteStore.Initialize(ctx); err != nil {
+		// Fail silently - database is optional
+		if verbose {
+			fmt.Printf("Warning: failed to initialize database: %v\n", err)
+		}
+		_ = sqliteStore.Close()
+		return
+	}
+
+	// Set global store
+	globalStore = sqliteStore
+
+	if verbose {
+		fmt.Printf("✓ Database initialized: %s\n", dbPath)
+	}
 }
 
 func initConfig() {
@@ -93,9 +151,21 @@ func initConfig() {
 	}
 
 	// Set defaults
-	viper.SetDefault("ollama.url", "http://localhost:11434")
-	viper.SetDefault("ollama.model", "qwen2.5-coder:7b")
-	viper.SetDefault("ollama.use_docker", true) // Prefer Docker by default
-	viper.SetDefault("aws.region", "eu-west-3")
+	// LLM configuration
+	viper.SetDefault("llm.provider", "ollama")
+	viper.SetDefault("llm.ollama.url", "http://localhost:11434")
+	viper.SetDefault("llm.ollama.model", "qwen2.5-coder:7b")
+	viper.SetDefault("llm.ollama.use_docker", true) // Prefer Docker by default
+	viper.SetDefault("llm.gemini.model", "gemini-2.0-pro-exp")
+	viper.SetDefault("llm.openai.model", "gpt-4o")
+
+	// Cloud configuration
+	viper.SetDefault("cloud.provider", "aws")
+	viper.SetDefault("cloud.default_region", "eu-west-3")
+	viper.SetDefault("aws.region", "eu-west-3") // Legacy support
+
+	// Terraform configuration
 	viper.SetDefault("terraform.bin", "tofu")
+	viper.SetDefault("terraform.backend.type", "s3")
+	viper.SetDefault("terraform.backend.s3_key", "terraform.tfstate")
 }
