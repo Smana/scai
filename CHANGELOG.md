@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.4.0](https://github.com/Smana/scia/compare/v0.3.0...v0.4.0) (2025-10-18)
+
+
+### Features
+
+* add health checks, LLM tracking, and deployment improvements ([50a1841](https://github.com/Smana/scia/commit/50a1841498201d6de9156f3efff479fe271ee039))
+* add health checks, LLM tracking, and deployment improvements ([6b7e517](https://github.com/Smana/scia/commit/6b7e5176c7f027901a92075c6a95313a185b516b))
+* add OpenTofu modules for CI validation ([c31e0dc](https://github.com/Smana/scia/commit/c31e0dc1e7fbd7b50af7b354b110a2863f7ae382))
+
+
+### Bug Fixes
+
+* streamline pre-commit config for Dagger CI compatibility ([b8c1ac5](https://github.com/Smana/scia/commit/b8c1ac5f615626f65333235d5e3d9df42a632062))
+* update AWS provider to ~&gt; 6.0 for EKS and Lambda compatibility ([22ae6a0](https://github.com/Smana/scia/commit/22ae6a008c15fbe3714cc94491ce25817f14dd12))
+* update Terraform module versions for AWS provider 6.x compatibility ([1fe8d62](https://github.com/Smana/scia/commit/1fe8d62e38ae995275b53a6d2bf85cc9922f2e3a))
+* update Terraform module versions for AWS provider 6.x compatibility ([d31c063](https://github.com/Smana/scia/commit/d31c0639f92b79dd67a7bfd31f51636ecb830153))
+
+
+### Code Refactoring
+
+* reduce cyclomatic complexity in SQLiteStore.List ([d25be2d](https://github.com/Smana/scia/commit/d25be2d76b3cb86ef1bcabb0aaa9068fe77862e7))
+
+
+### Continuous Integration
+
+* add OpenTofu validation using Dagger ([032a290](https://github.com/Smana/scia/commit/032a2909ca12b862c125fa227833ad7a54b71c72))
+
 ## [0.3.0](https://github.com/Smana/scia/compare/v0.2.0...v0.3.0) (2025-10-18)
 
 
