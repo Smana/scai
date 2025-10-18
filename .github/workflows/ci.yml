@@ -73,6 +73,23 @@ jobs:
           path: coverage.out
           retention-days: 30
 
+  opentofu-validate:
+    name: Validate OpenTofu Modules
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate OpenTofu configuration
+        uses: dagger/dagger-for-github@v7
+        with:
+          version: "latest"
+          verb: call
+          module: github.com/Smana/daggerverse/pre-commit-tf@pre-commit-tf/v0.1.2
+          args: run --dir "." --tf-binary="tofu"
+
   build-test:
     name: Build Application
     runs-on: ubuntu-latest
@@ -110,7 +127,7 @@ jobs:
   ci-success:
     name: CI Validation Complete
     runs-on: ubuntu-latest
-    needs: [validate-commits, lint-and-test, build-test]
+    needs: [validate-commits, lint-and-test, opentofu-validate, build-test]
     if: always()
     steps:
       - name: Check CI Status
@@ -125,6 +142,7 @@ jobs:
 
           if [[ "$COMMIT_VALIDATION_OK" == "true" && \
                 "${{ needs.lint-and-test.result }}" == "success" && \
+                "${{ needs.opentofu-validate.result }}" == "success" && \
                 "${{ needs.build-test.result }}" == "success" ]]; then
             echo "✅ All CI validation checks passed!"
             exit 0
@@ -134,6 +152,7 @@ jobs:
               echo "  - Validate Commits: ${{ needs.validate-commits.result }}"
             fi
             echo "  - Lint and Test: ${{ needs.lint-and-test.result }}"
+            echo "  - OpenTofu Validate: ${{ needs.opentofu-validate.result }}"
             echo "  - Build Test: ${{ needs.build-test.result }}"
             exit 1
           fi

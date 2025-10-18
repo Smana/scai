@@ -5,11 +5,13 @@ version: '3'
 # Dagger modules used:
 #   - sagikazarmark/daggerverse/go: Comprehensive Go tooling (build, cache management)
 #   - purpleclay/daggerverse/golang: Testing, linting, vulnerability scanning
+#   - Smana/daggerverse/pre-commit-tf: OpenTofu/Terraform validation with pre-commit hooks
 
 vars:
   BINARY_NAME: scia
   DAGGER_GO_MODULE: github.com/sagikazarmark/daggerverse/go@v0.9.0
   DAGGER_GOLANG_MODULE: github.com/purpleclay/daggerverse/golang@v0.5.0
+  DAGGER_PRECOMMIT_TF_MODULE: github.com/Smana/daggerverse/pre-commit-tf@pre-commit-tf/v0.1.2
 
 tasks:
   default:
@@ -125,6 +127,28 @@ tasks:
       - task: test
       - task: lint
       - task: vulncheck
+
+  # OpenTofu/Terraform validation tasks
+  tofu-validate:
+    desc: Validate OpenTofu modules using Dagger pre-commit-tf
+    cmds:
+      - |
+        dagger call -m {{.DAGGER_PRECOMMIT_TF_MODULE}} \
+          run --dir "." --tf-binary="tofu"
+
+  tofu-fmt:
+    desc: Format OpenTofu files
+    cmds:
+      - tofu fmt -recursive opentofu/
+
+  tofu-init-validate:
+    desc: Initialize and validate all OpenTofu modules (local)
+    cmds:
+      - |
+        for module in opentofu/modules/*/; do
+          echo "Validating $module"
+          cd "$module" && tofu init && tofu validate && cd -
+        done
 
   mod-version:
     desc: Show Go version from go.mod
