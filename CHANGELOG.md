@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.2](https://github.com/Smana/scai/compare/v0.5.1...v0.5.2) (2025-10-19)
+
+
+### Documentation
+
+* fix installation instructions and replace example URLs ([81e9305](https://github.com/Smana/scai/commit/81e9305fa9fc82aead9075e33f154956600ab393))
+* fix installation instructions for tar.gz archives ([c05fe5d](https://github.com/Smana/scai/commit/c05fe5d01a9d0ce0708bfa412b9eefad9e14801c))
+* replace Arvo-AI repository references with generic placeholder ([9bcb6c6](https://github.com/Smana/scai/commit/9bcb6c674eb0cfb247bb3265a0de022f065db87f))
+
 ## [0.5.1](https://github.com/Smana/scia/compare/v0.5.0...v0.5.1) (2025-10-18)
 
 
