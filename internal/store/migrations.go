@@ -2,7 +2,7 @@ package store
 
 const (
 	// SchemaVersion is the current database schema version
-	SchemaVersion = 2
+	SchemaVersion = 1
 
 	// InitialSchema creates the deployments table
 	InitialSchema = `
@@ -43,15 +43,9 @@ CREATE TABLE IF NOT EXISTS schema_version (
 );
 `
 
-	// AddLLMInfoMigration adds LLM provider and model columns
-	AddLLMInfoMigration = `
-ALTER TABLE deployments ADD COLUMN llm_provider TEXT;
-ALTER TABLE deployments ADD COLUMN llm_model TEXT;
-`
 )
 
 // Migrations is a list of schema migrations to apply in order
 var Migrations = []string{
 	InitialSchema,
-	AddLLMInfoMigration,
 }
