@@ -1,4 +1,4 @@
-module github.com/Smana/scia
+module github.com/Smana/scai
 
 go 1.25
 

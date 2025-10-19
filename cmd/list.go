@@ -7,7 +7,7 @@ import (
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 
-	"github.com/Smana/scia/internal/store"
+	"github.com/Smana/scai/internal/store"
 )
 
 var listCmd = &cobra.Command{

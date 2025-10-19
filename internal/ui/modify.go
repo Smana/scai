@@ -5,10 +5,10 @@ import (
 
 	"github.com/pterm/pterm"
 
-	"github.com/Smana/scia/internal/deployer"
-	"github.com/Smana/scia/internal/llm"
-	"github.com/Smana/scia/internal/parser"
-	"github.com/Smana/scia/internal/types"
+	"github.com/Smana/scai/internal/deployer"
+	"github.com/Smana/scai/internal/llm"
+	"github.com/Smana/scai/internal/parser"
+	"github.com/Smana/scai/internal/types"
 )
 
 // ConfirmOrModify shows the plan and allows confirmation or modification

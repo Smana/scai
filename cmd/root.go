@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/Smana/scia/internal/store"
+	"github.com/Smana/scai/internal/store"
 )
 
 var (
@@ -30,9 +30,9 @@ var (
 
 // rootCmd represents the base command
 var rootCmd = &cobra.Command{
-	Use:   "scia",
+	Use:   "scai",
 	Short: "Smart Cloud Infrastructure Automation - AI-powered deployment system",
-	Long: `SCIA (Smart Cloud Infrastructure Automation) analyzes code repositories,
+	Long: `SCAI (Smart Cloud Infrastructure Automation) analyzes code repositories,
 determines optimal deployment strategies using AI, and automatically provisions
 infrastructure using Terraform.
 
@@ -62,8 +62,8 @@ func init() {
 	cobra.OnInitialize(initConfig, initDatabase)
 
 	// Global flags
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default: $HOME/.scia.yaml)")
-	rootCmd.PersistentFlags().StringVar(&workDir, "work-dir", "/tmp/scia", "working directory")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default: $HOME/.scai.yaml)")
+	rootCmd.PersistentFlags().StringVar(&workDir, "work-dir", "/tmp/scai", "working directory")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
 
 	// Bind flags to Viper
@@ -80,15 +80,15 @@ func initDatabase() {
 		return
 	}
 
-	// Database path: ~/.scia/deployments.db
-	sciaDir := filepath.Join(home, ".scia")
+	// Database path: ~/.scai/deployments.db
+	sciaDir := filepath.Join(home, ".scai")
 	dbPath := filepath.Join(sciaDir, "deployments.db")
 
-	// Create .scia directory if it doesn't exist
+	// Create .scai directory if it doesn't exist
 	if err := os.MkdirAll(sciaDir, 0o755); err != nil {
 		// Fail silently - database is optional
 		if verbose {
-			fmt.Printf("Warning: failed to create .scia directory: %v\n", err)
+			fmt.Printf("Warning: failed to create .scai directory: %v\n", err)
 		}
 		return
 	}
@@ -133,14 +133,14 @@ func initConfig() {
 
 		viper.AddConfigPath(home)
 		viper.SetConfigType("yaml")
-		viper.SetConfigName(".scia")
+		viper.SetConfigName(".scai")
 	}
 
-	// Read environment variables with SCIA_ prefix
-	// e.g., SCIA_OLLAMA_URL=http://remote:11434
-	viper.SetEnvPrefix("SCIA")
+	// Read environment variables with SCAI_ prefix
+	// e.g., SCAI_OLLAMA_URL=http://remote:11434
+	viper.SetEnvPrefix("SCAI")
 	viper.AutomaticEnv()
-	// Replace dots with underscores for env vars (ollama.url -> SCIA_OLLAMA_URL)
+	// Replace dots with underscores for env vars (ollama.url -> SCAI_OLLAMA_URL)
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	// Read config file if exists

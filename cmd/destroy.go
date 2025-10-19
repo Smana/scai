@@ -9,8 +9,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/Smana/scia/internal/store"
-	"github.com/Smana/scia/internal/terraform"
+	"github.com/Smana/scai/internal/store"
+	"github.com/Smana/scai/internal/terraform"
 )
 
 var destroyCmd = &cobra.Command{

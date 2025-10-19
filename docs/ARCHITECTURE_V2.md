@@ -1,10 +1,10 @@
-# SCIA v2: Kubernetes-Native AI Infrastructure Control Plane
+# SCAI v2: Kubernetes-Native AI Infrastructure Control Plane
 
 **Target Architecture for Smart Cloud Infrastructure Automation v2**
 
 ## Executive Summary
 
-SCIA v2 transforms the current imperative CLI tool into a **Kubernetes-native control plane** with **RAG-powered decision-making**, enabling continuous reconciliation, drift detection, and collaborative multi-tenant deployments. The architecture leverages Crossplane for cloud resource management, pgvector for contextual RAG capabilities, and custom Kubernetes operators for AI-driven infrastructure automation.
+SCAI v2 transforms the current imperative CLI tool into a **Kubernetes-native control plane** with **RAG-powered decision-making**, enabling continuous reconciliation, drift detection, and collaborative multi-tenant deployments. The architecture leverages Crossplane for cloud resource management, pgvector for contextual RAG capabilities, and custom Kubernetes operators for AI-driven infrastructure automation.
 
 ---
 
@@ -63,7 +63,7 @@ SCIA v2 transforms the current imperative CLI tool into a **Kubernetes-native co
      ┌───────────┼───────────┬───────────────┐
      │           │           │               │
 ┌────▼────┐ ┌───▼────┐ ┌────▼─────┐  ┌─────▼──────┐
-│  SCIA   │ │Crosspl.│ │   RAG    │  │ Policy     │
+│  SCAI   │ │Crosspl.│ │   RAG    │  │ Policy     │
 │Operator │ │Operator│ │ Operator │  │ Enforcement│
 └─────────┘ └────────┘ └──────────┘  └────────────┘
 ```
@@ -80,7 +80,7 @@ SCIA v2 transforms the current imperative CLI tool into a **Kubernetes-native co
 ```
 User Intent Layer      →  `Deployment` CRD (high-level)
   ↓
-AI Decision Layer      →  SCIA Operator (strategy, params)
+AI Decision Layer      →  SCAI Operator (strategy, params)
   ↓
 Cloud Abstraction      →  Crossplane Compositions (cloud-agnostic)
   ↓
@@ -121,7 +121,7 @@ graph TB
     end
 
     subgraph "Control Plane Cluster"
-        subgraph "SCIA Operator"
+        subgraph "SCAI Operator"
             Reconciler[Reconciliation Loop]
             Analyzer[Repository Analyzer]
             DecisionEngine[AI Decision Engine]
@@ -177,19 +177,19 @@ graph TB
     Reconciler --> CostEstimator
     Reconciler --> Observability
 
-    style SCIA Operator fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style SCAI Operator fill:#e1f5ff,stroke:#01579b,stroke-width:2px
     style RAG System fill:#fff3e0,stroke:#e65100,stroke-width:2px
     style Crossplane fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
 ```
 
 ### Component Descriptions
 
-#### **1. SCIA Operator** (Go, Kubebuilder)
+#### **1. SCAI Operator** (Go, Kubebuilder)
 
 **Custom Resource Definitions:**
 
 ```yaml
-apiVersion: scia.io/v1alpha1
+apiVersion: scai.io/v1alpha1
 kind: Deployment
 metadata:
   name: flask-app-prod
@@ -215,7 +215,7 @@ status:
       status: "True"
       reason: DeploymentSuccessful
   infrastructureRef:
-    apiVersion: scia.io/v1alpha1
+    apiVersion: scai.io/v1alpha1
     kind: Infrastructure
     name: flask-app-prod-infra
   endpoints:
@@ -238,7 +238,7 @@ status:
 
 ```go
 func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-    deployment := &sciaapi.Deployment{}
+    deployment := &scaiapi.Deployment{}
     if err := r.Get(ctx, req.NamespacedName, deployment); err != nil {
         return ctrl.Result{}, client.IgnoreNotFound(err)
     }
@@ -281,7 +281,7 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
     }
 
     // 6. Store deployment for future RAG
-    if deployment.Status.Phase == sciaapi.PhaseRunning {
+    if deployment.Status.Phase == scaiapi.PhaseRunning {
         r.RAG.StoreDeployment(ctx, deployment, decision)
     }
 
@@ -488,7 +488,7 @@ recommend the optimal deployment strategy. Output JSON:
 **Custom Compositions with KCL:**
 
 ```python
-# compositions/scia-vm-deployment.kcl
+# compositions/scai-vm-deployment.kcl
 import crossplane.v1 as cp
 import aws.ec2.v1beta1 as ec2
 
@@ -513,7 +513,7 @@ composition VMDeployment:
                 spec: {
                     forProvider: {
                         region: spec.region
-                        description: "SCIA-managed security group for " + spec.framework
+                        description: "SCAI-managed security group for " + spec.framework
                         ingress: [
                             {
                                 fromPort: spec.appPort
@@ -551,24 +551,24 @@ composition VMDeployment:
     ]
 ```
 
-**SCIA Operator creates Crossplane Composite Resource:**
+**SCAI Operator creates Crossplane Composite Resource:**
 
 ```go
 func (r *DeploymentReconciler) buildInfrastructure(
-    deployment *sciaapi.Deployment,
+    deployment *scaiapi.Deployment,
     decision Decision
 ) *unstructured.Unstructured {
     infra := &unstructured.Unstructured{}
     infra.SetGroupVersionKind(schema.GroupVersionKind{
-        Group:   "scia.io",
+        Group:   "scai.io",
         Version: "v1alpha1",
         Kind:    "Infrastructure",
     })
     infra.SetName(deployment.Name + "-infra")
     infra.SetNamespace(deployment.Namespace)
 
-    // Map SCIA decision to Crossplane Composition claim
-    compositionRef := fmt.Sprintf("scia-%s-deployment", decision.Strategy)
+    // Map SCAI decision to Crossplane Composition claim
+    compositionRef := fmt.Sprintf("scai-%s-deployment", decision.Strategy)
 
     spec := map[string]interface{}{
         "compositionRef": map[string]interface{}{
@@ -593,7 +593,7 @@ func (r *DeploymentReconciler) buildInfrastructure(
 #### **4. Multi-Cloud Provider Abstraction**
 
 ```yaml
-apiVersion: scia.io/v1alpha1
+apiVersion: scai.io/v1alpha1
 kind: CloudProvider
 metadata:
   name: aws-production
@@ -613,7 +613,7 @@ spec:
     monthlyBudget: 5000
     alertThreshold: 0.8
   tags:
-    managed-by: scia
+    managed-by: scai
     team: backend
     environment: production
 ```
@@ -624,7 +624,7 @@ spec:
 
 ### Why RAG for Infrastructure?
 
-Traditional static knowledge bases (like SCIA v1's 3000-line knowledge.go) cannot:
+Traditional static knowledge bases (like SCAI v1's 3000-line knowledge.go) cannot:
 - **Learn from failures**: Same mistakes repeated
 - **Adapt to cost changes**: AWS pricing updates quarterly
 - **Leverage team knowledge**: Successful patterns not shared
@@ -670,13 +670,13 @@ Traditional static knowledge bases (like SCIA v1's 3000-line knowledge.go) canno
 
 | Database | Pros | Cons | Verdict |
 |----------|------|------|---------|
-| **pgvector** | Unified DB (relational + vector), mature PostgreSQL ecosystem, free | Slower than specialized DBs | ✅ **Best for SCIA v2** |
+| **pgvector** | Unified DB (relational + vector), mature PostgreSQL ecosystem, free | Slower than specialized DBs | ✅ **Best for SCAI v2** |
 | **Weaviate** | Fast hybrid search, built-in LLM integration | Extra service to manage | ⚠️ Consider for scale |
 | **Pinecone** | Fully managed, auto-scaling | Vendor lock-in, $$$ | ❌ Avoid |
 | **Qdrant** | Fast, Rust-based, good filtering | Another service | ⚠️ Consider for scale |
 
 **Recommendation:** Start with pgvector
-- Most SCIA deployments < 100k vectors (pgvector sweet spot)
+- Most SCAI deployments < 100k vectors (pgvector sweet spot)
 - Already need PostgreSQL for metadata
 - Simplifies operations (one database)
 - Easy migration to Weaviate/Qdrant later if needed
@@ -737,10 +737,10 @@ def rerank_results(results: List[DeploymentContext], weights: Dict[str, float]) 
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│         Management Cluster (SCIA Control Plane)     │
+│         Management Cluster (SCAI Control Plane)     │
 │  ┌──────────────────────────────────────────────┐   │
-│  │  Namespace: scia-system                      │   │
-│  │  - SCIA Operator                             │   │
+│  │  Namespace: scai-system                      │   │
+│  │  - SCAI Operator                             │   │
 │  │  - RAG Service (Embedding + Retrieval)       │   │
 │  │  - PostgreSQL + pgvector                     │   │
 │  │  - Crossplane Core                           │   │
@@ -785,7 +785,7 @@ kind: Namespace
 metadata:
   name: team-backend
   labels:
-    scia.io/tenant: "true"
+    scai.io/tenant: "true"
     team: backend
 ---
 apiVersion: v1
@@ -798,7 +798,7 @@ spec:
     requests.cpu: "100"
     requests.memory: 200Gi
     persistentvolumeclaims: "10"
-    count/deployments.scia.io: "50"  # Max 50 SCIA deployments
+    count/deployments.scai.io: "50"  # Max 50 SCAI deployments
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -811,14 +811,14 @@ subjects:
     apiGroup: rbac.authorization.k8s.io
 roleRef:
   kind: ClusterRole
-  name: scia-deployer  # Custom role for SCIA resources
+  name: scai-deployer  # Custom role for SCAI resources
   apiGroup: rbac.authorization.k8s.io
 ```
 
 ### Controller Pattern
 
 ```go
-// SCIA Operator uses Kubebuilder
+// SCAI Operator uses Kubebuilder
 package main
 
 import (
@@ -860,7 +860,7 @@ func main() {
 
 ### Composition Function Pattern
 
-SCIA uses **KCL-based Composition Functions** for:
+SCAI uses **KCL-based Composition Functions** for:
 1. **Dynamic logic**: Calculate instance types, node counts based on analysis
 2. **Policy enforcement**: Auto-enable monitoring, HTTPS, backups
 3. **Best practices**: Security groups, IAM roles, tagging
@@ -916,7 +916,7 @@ composition AutoScalingVM:
                         # Reference to launch template
                     }
                     tags: [
-                        {key: "managed-by", value: "scia"},
+                        {key: "managed-by", value: "scai"},
                         {key: "framework", value: spec.framework},
                         {key: "predicted-rps", value: str(spec.expectedRPS)}
                     ]
@@ -1088,7 +1088,7 @@ package graph
 import (
     "context"
     metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-    sciaapi "github.com/smana/scia/api/v1alpha1"
+    scaiapi "github.com/smana/scai/api/v1alpha1"
 )
 
 type Resolver struct {
@@ -1100,7 +1100,7 @@ func (r *queryResolver) Deployment(ctx context.Context, id string) (*model.Deplo
     namespace, name := parseID(id)
 
     // Fetch from Kubernetes API
-    deployment := &sciaapi.Deployment{}
+    deployment := &scaiapi.Deployment{}
     err := r.k8sClient.Get(ctx, client.ObjectKey{
         Namespace: namespace,
         Name:      name,
@@ -1118,13 +1118,13 @@ func (r *mutationResolver) CreateDeployment(
     input model.CreateDeploymentInput,
 ) (*model.CreateDeploymentPayload, error) {
     // Create Kubernetes CR
-    deployment := &sciaapi.Deployment{
+    deployment := &scaiapi.Deployment{
         ObjectMeta: metav1.ObjectMeta{
             Name:      input.Name,
             Namespace: input.Namespace,
         },
-        Spec: sciaapi.DeploymentSpec{
-            Repository: sciaapi.Repository{
+        Spec: scaiapi.DeploymentSpec{
+            Repository: scaiapi.Repository{
                 URL: input.Repository.URL,
                 Ref: input.Repository.Ref,
             },
@@ -1148,7 +1148,7 @@ func (r *mutationResolver) CreateDeployment(
 
 #### Why NOT REST?
 
-**Cons of REST for SCIA:**
+**Cons of REST for SCAI:**
 - Over-fetching: Mobile clients waste bandwidth
 - Under-fetching: Multiple requests for related data (deployment + status + cost)
 - Versioning complexity: `/v1`, `/v2` as API evolves
@@ -1159,7 +1159,7 @@ func (r *mutationResolver) CreateDeployment(
 - Caching-heavy workloads (REST caching easier)
 - Public APIs with broad compatibility needs
 
-**Verdict:** GraphQL for SCIA v2 web UI, Kubernetes API for CLI/GitOps
+**Verdict:** GraphQL for SCAI v2 web UI, Kubernetes API for CLI/GitOps
 
 ---
 
@@ -1168,26 +1168,26 @@ func (r *mutationResolver) CreateDeployment(
 ### RBAC Model
 
 ```yaml
-# ClusterRole: SCIA Deployer (can manage deployments)
+# ClusterRole: SCAI Deployer (can manage deployments)
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: scia-deployer
+  name: scai-deployer
 rules:
-  - apiGroups: ["scia.io"]
+  - apiGroups: ["scai.io"]
     resources: ["deployments", "infrastructures", "cloudproviders"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: [""]
     resources: ["events"]
     verbs: ["get", "list", "watch"]
 ---
-# ClusterRole: SCIA Viewer (read-only)
+# ClusterRole: SCAI Viewer (read-only)
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: scia-viewer
+  name: scai-viewer
 rules:
-  - apiGroups: ["scia.io"]
+  - apiGroups: ["scai.io"]
     resources: ["deployments", "infrastructures"]
     verbs: ["get", "list", "watch"]
 ```
@@ -1198,7 +1198,7 @@ rules:
 
 ```go
 func (v *DeploymentValidator) ValidateCreate(ctx context.Context, obj runtime.Object) error {
-    deployment := obj.(*sciaapi.Deployment)
+    deployment := obj.(*scaiapi.Deployment)
 
     // 1. Check budget limit
     if deployment.Spec.Budget != nil {
@@ -1216,7 +1216,7 @@ func (v *DeploymentValidator) ValidateCreate(ctx context.Context, obj runtime.Ob
     }
 
     // 3. Validate cloud provider exists
-    provider := &sciaapi.CloudProvider{}
+    provider := &scaiapi.CloudProvider{}
     err := v.Client.Get(ctx, client.ObjectKey{
         Namespace: deployment.Namespace,
         Name:      deployment.Spec.CloudProvider,
@@ -1232,12 +1232,12 @@ func (v *DeploymentValidator) ValidateCreate(ctx context.Context, obj runtime.Ob
 ### Network Policies
 
 ```yaml
-# Isolate RAG service (only SCIA operator can access)
+# Isolate RAG service (only SCAI operator can access)
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: rag-service-isolation
-  namespace: scia-system
+  namespace: scai-system
 spec:
   podSelector:
     matchLabels:
@@ -1248,7 +1248,7 @@ spec:
     - from:
         - podSelector:
             matchLabels:
-              app: scia-operator
+              app: scai-operator
       ports:
         - protocol: TCP
           port: 8080
@@ -1271,7 +1271,7 @@ stringData:
     aws_access_key_id = AKIA...
     aws_secret_access_key = ...
 ---
-apiVersion: scia.io/v1alpha1
+apiVersion: scai.io/v1alpha1
 kind: CloudProvider
 metadata:
   name: aws-production
@@ -1316,7 +1316,7 @@ spec:
 **Goal:** Basic Kubernetes control plane with CRDs
 
 - [ ] Design CRDs: `Deployment`, `Infrastructure`, `CloudProvider`
-- [ ] Implement SCIA Operator skeleton (Kubebuilder)
+- [ ] Implement SCAI Operator skeleton (Kubebuilder)
 - [ ] Port existing analyzer logic from v1
 - [ ] Basic reconciliation loop (no RAG, use static LLM)
 - [ ] Deploy on dev cluster, test with Flask/Express apps
@@ -1328,7 +1328,7 @@ spec:
 
 - [ ] Install Crossplane + AWS Provider
 - [ ] Write KCL compositions for VM, Kubernetes, Serverless
-- [ ] SCIA Operator creates Crossplane Composite Resources
+- [ ] SCAI Operator creates Crossplane Composite Resources
 - [ ] Test multi-cloud (AWS + GCP)
 - [ ] **Deliverable:** Crossplane manages all cloud resources
 
@@ -1411,7 +1411,7 @@ spec:
 |-----------|-----------|-----------|
 | **Policy Engine** | Kyverno | Kubernetes-native, easier than OPA |
 | **Secrets** | External Secrets Operator + Vault | Secure, GitOps-friendly |
-| **GitOps** | ArgoCD | SCIA deployments as Git-tracked CRs |
+| **GitOps** | ArgoCD | SCAI deployments as Git-tracked CRs |
 | **Monitoring** | Prometheus + Grafana | Kubernetes standard |
 | **Logging** | Loki | Label-based, integrates with Grafana |
 
@@ -1425,7 +1425,7 @@ spec:
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  SCIA v1 (CLI)                                      │
+│  SCAI v1 (CLI)                                      │
 │  - Continues to work as-is                          │
 │  - Stores deployments in SQLite                     │
 │  - Applies Terraform directly                       │
@@ -1435,7 +1435,7 @@ spec:
                  │
                  ▼
 ┌─────────────────────────────────────────────────────┐
-│  SCIA v2 (Control Plane)                            │
+│  SCAI v2 (Control Plane)                            │
 │  - New deployments go through operator              │
 │  - RAG learns from v1 history (batch import)        │
 │  - Crossplane manages resources                     │
@@ -1447,7 +1447,7 @@ spec:
 1. **Import v1 deployments into RAG**
    ```bash
    # Export v1 SQLite to JSON
-   scia export --format json > v1_deployments.json
+   scai export --format json > v1_deployments.json
 
    # Import into v2 RAG system
    kubectl apply -f - <<EOF
@@ -1455,13 +1455,13 @@ spec:
    kind: Job
    metadata:
      name: import-v1-deployments
-     namespace: scia-system
+     namespace: scai-system
    spec:
      template:
        spec:
          containers:
            - name: importer
-             image: scia-rag-importer:latest
+             image: scai-rag-importer:latest
              env:
                - name: V1_EXPORT_FILE
                  value: /data/v1_deployments.json
@@ -1499,7 +1499,7 @@ r.Recorder.Event(deployment, corev1.EventTypeNormal, "AnalysisComplete",
 var (
     deploymentsTotal = prometheus.NewCounterVec(
         prometheus.CounterOpts{
-            Name: "scia_deployments_total",
+            Name: "scai_deployments_total",
             Help: "Total number of deployments",
         },
         []string{"strategy", "framework", "outcome"},
@@ -1507,7 +1507,7 @@ var (
 
     deploymentDuration = prometheus.NewHistogramVec(
         prometheus.HistogramOpts{
-            Name: "scia_deployment_duration_seconds",
+            Name: "scai_deployment_duration_seconds",
             Help: "Deployment duration in seconds",
         },
         []string{"strategy"},
@@ -1547,7 +1547,7 @@ func (r *DeploymentReconciler) estimateCost(decision Decision) (float64, error) 
 
 **Budget alerts:**
 ```yaml
-apiVersion: scia.io/v1alpha1
+apiVersion: scai.io/v1alpha1
 kind: Deployment
 spec:
   budget:
@@ -1597,7 +1597,7 @@ LIMIT 5;
 
 **Deployment history:**
 ```yaml
-apiVersion: scia.io/v1alpha1
+apiVersion: scai.io/v1alpha1
 kind: Deployment
 status:
   history:
@@ -1614,11 +1614,11 @@ status:
 
 **Rollback command:**
 ```bash
-kubectl scia rollback deployment/flask-app-prod --to-revision 1
+kubectl scai rollback deployment/flask-app-prod --to-revision 1
 ```
 
 **Implementation:**
-- SCIA Operator creates new Infrastructure CR with previous config
+- SCAI Operator creates new Infrastructure CR with previous config
 - Crossplane reconciles (destroys v2 resources, recreates v1)
 - Blue-green: Keep both versions, switch traffic
 

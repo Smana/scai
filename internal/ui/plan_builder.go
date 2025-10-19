@@ -3,8 +3,8 @@ package ui
 import (
 	"fmt"
 
-	"github.com/Smana/scia/internal/deployer"
-	"github.com/Smana/scia/internal/types"
+	"github.com/Smana/scai/internal/deployer"
+	"github.com/Smana/scai/internal/types"
 )
 
 // BuildDeploymentPlan creates a deployment plan based on the strategy and configuration

@@ -183,7 +183,7 @@ func (m *S3Manager) CreateStateBucket(ctx context.Context, bucketName string) (b
 			TagSet: []types.Tag{
 				{
 					Key:   aws.String("ManagedBy"),
-					Value: aws.String("SCIA"),
+					Value: aws.String("SCAI"),
 				},
 				{
 					Key:   aws.String("Purpose"),

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-SCIA (Smart Cloud Infrastructure Automation) is a Go-based CLI tool that analyzes code repositories, uses AI (Ollama LLM) to determine optimal deployment strategies, and automatically provisions infrastructure using Terraform. It supports VM (EC2), Kubernetes (EKS), and Serverless (Lambda) deployments.
+SCAI (Smart Cloud Infrastructure Automation) is a Go-based CLI tool that analyzes code repositories, uses AI (Ollama LLM) to determine optimal deployment strategies, and automatically provisions infrastructure using Terraform. It supports VM (EC2), Kubernetes (EKS), and Serverless (Lambda) deployments.
 
 **Core Architecture**: The system uses a 3-tier decision architecture:
 1. **Rule-Based Fast Path**: YAML-defined heuristics for common patterns (configs/deployment_rules.yaml)
@@ -96,8 +96,8 @@ All Dagger operations are defined in [Taskfile.yml](Taskfile.yml).
 ### Configuration
 The application uses Viper for configuration with precedence: **Flags > Environment Variables > Config File > Defaults**
 
-Config file location: `~/.scia.yaml`
-Environment variables: Use `SCIA_` prefix (e.g., `SCIA_OLLAMA_MODEL`)
+Config file location: `~/.scai.yaml`
+Environment variables: Use `SCAI_` prefix (e.g., `SCAI_OLLAMA_MODEL`)
 
 ## Code Architecture
 
@@ -184,8 +184,8 @@ Falls back to framework defaults if not found.
 ### Configuration Precedence
 Viper configuration order (cmd/root.go):
 1. Command-line flags (--verbose, --work-dir)
-2. Environment variables (SCIA_OLLAMA_MODEL, SCIA_AWS_REGION)
-3. Config file (~/.scia.yaml)
+2. Environment variables (SCAI_OLLAMA_MODEL, SCAI_AWS_REGION)
+3. Config file (~/.scai.yaml)
 4. Hardcoded defaults (us-east-1, qwen2.5-coder:7b, etc.)
 
 ## Common Development Workflows
@@ -212,7 +212,7 @@ Viper configuration order (cmd/root.go):
 
 ### Debugging Deployments
 - Use `--verbose` flag for detailed logs
-- Check Terraform state in work directory (default: /tmp/scia/terraform/<timestamp>/)
+- Check Terraform state in work directory (default: /tmp/scai/terraform/<timestamp>/)
 - For VM deployments, SSH to instance and check `/var/log/user-data.log` and `/var/log/app.log`
 - Health checks target root path by default
 

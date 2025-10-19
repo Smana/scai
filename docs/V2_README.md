@@ -1,10 +1,10 @@
-# SCIA v2 Architecture Documentation
+# SCAI v2 Architecture Documentation
 
-> **Comprehensive design for transforming SCIA from a CLI tool to a Kubernetes-native AI infrastructure control plane**
+> **Comprehensive design for transforming SCAI from a CLI tool to a Kubernetes-native AI infrastructure control plane**
 
 ## 📚 Documentation Index
 
-This directory contains a complete architectural proposal for SCIA v2, researched using state-of-the-art 2025 patterns for RAG, Kubernetes operators, and cloud infrastructure automation.
+This directory contains a complete architectural proposal for SCAI v2, researched using state-of-the-art 2025 patterns for RAG, Kubernetes operators, and cloud infrastructure automation.
 
 ### Core Documents
 
@@ -104,7 +104,7 @@ This directory contains a complete architectural proposal for SCIA v2, researche
 
 | Aspect | v1 (Current) | v2 (Proposed) |
 |--------|-------------|---------------|
-| **Execution Model** | Imperative CLI (`scia deploy`) | Kubernetes operator (continuous reconciliation) |
+| **Execution Model** | Imperative CLI (`scai deploy`) | Kubernetes operator (continuous reconciliation) |
 | **State Management** | SQLite + S3 Terraform state | Kubernetes API (etcd) |
 | **Knowledge** | Static 3000-line knowledge base | RAG with pgvector (learns from deployments) |
 | **Collaboration** | Single-user, local | Multi-tenant control plane (team dashboard) |
@@ -195,14 +195,14 @@ This architecture was designed using **comprehensive research** of 2025 state-of
 
 ### Phase 1: Foundation (3 months)
 - Design CRDs (`Deployment`, `Infrastructure`, `CloudProvider`)
-- Implement SCIA Operator skeleton (Kubebuilder)
+- Implement SCAI Operator skeleton (Kubebuilder)
 - Basic reconciliation loop (no RAG, static LLM)
 - **Deliverable:** `kubectl apply -f deployment.yaml` creates EC2
 
 ### Phase 2: Crossplane Integration (2 months)
 - Install Crossplane + AWS Provider
 - Write KCL compositions (VM, Kubernetes, Serverless)
-- SCIA Operator creates Crossplane Composite Resources
+- SCAI Operator creates Crossplane Composite Resources
 - **Deliverable:** Crossplane manages all cloud resources
 
 ### Phase 3: RAG System (3 months)
@@ -373,7 +373,7 @@ This architecture was designed using **comprehensive research** of 2025 state-of
 
 ## 🎉 Summary
 
-**SCIA v2 transforms the project from a CLI tool to an enterprise-grade AI infrastructure control plane.**
+**SCAI v2 transforms the project from a CLI tool to an enterprise-grade AI infrastructure control plane.**
 
 **Key Innovations:**
 1. ✅ **RAG learning** from past deployments (90% accuracy after 100 deploys)

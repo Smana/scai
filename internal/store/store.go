@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/Smana/scia/internal/types"
+	"github.com/Smana/scai/internal/types"
 )
 
 // DeploymentStatus represents the current state of a deployment

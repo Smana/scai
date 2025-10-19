@@ -279,7 +279,7 @@ echo "🔗 $(gh pr view $PR_NUM --json url -q '.url')"
 **Package Relationships**:
 ```mermaid
 flowchart TB
-    subgraph "cmd/scia"
+    subgraph "cmd/scai"
         main["main.go"]
         deploy["deploy.go"]
     end

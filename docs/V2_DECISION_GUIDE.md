@@ -1,8 +1,8 @@
-# SCIA v2 Decision Guide: Key Improvements & Trade-offs
+# SCAI v2 Decision Guide: Key Improvements & Trade-offs
 
 ## Executive Summary for Decision Makers
 
-**Should we build SCIA v2?** → **YES, if you want:**
+**Should we build SCAI v2?** → **YES, if you want:**
 - ✅ Continuous reconciliation (drift detection)
 - ✅ Team collaboration (multi-tenant control plane)
 - ✅ Learning from past deployments (RAG)
@@ -20,16 +20,16 @@
 
 | **v1 Behavior** | **v2 Behavior** | **Business Impact** |
 |-----------------|-----------------|---------------------|
-| Run `scia deploy` → Terraform apply → Done | Kubernetes operator continuously checks desired vs actual state | **Automatic healing**: If EC2 instance terminates, v2 recreates it. v1 requires manual re-run |
+| Run `scai deploy` → Terraform apply → Done | Kubernetes operator continuously checks desired vs actual state | **Automatic healing**: If EC2 instance terminates, v2 recreates it. v1 requires manual re-run |
 | Drift undetected (manual changes invisible) | Drift detected and corrected automatically | **Cost savings**: Detect when someone manually adds expensive resources |
 | No update mechanism (must destroy + recreate) | Update in-place (change Deployment CR → operator reconciles) | **Zero downtime**: Update instance type without manual work |
 
 **Example:**
 ```bash
 # v1: Manual disaster recovery
-$ scia deploy "..." https://...  # Creates EC2
+$ scai deploy "..." https://...  # Creates EC2
 $ # Instance terminates manually
-$ scia deploy "..." https://...  # Must re-run entire process
+$ scai deploy "..." https://...  # Must re-run entire process
 
 # v2: Automatic recovery
 $ kubectl apply -f deployment.yaml  # Creates EC2
@@ -72,7 +72,7 @@ $ # Operator detects, recreates automatically (no human intervention)
 **Use Case: 10-Person Engineering Team**
 
 **v1:**
-- Each engineer runs `scia` locally
+- Each engineer runs `scai` locally
 - No visibility: Who deployed what? Where?
 - No cost tracking: Total AWS bill is mystery
 - No collaboration: Same mistakes repeated across team
@@ -98,7 +98,7 @@ $ # Operator detects, recreates automatically (no human intervention)
 **v1:**
 ```bash
 # Engineer makes change
-$ scia deploy "..." https://...
+$ scai deploy "..." https://...
 # No review process, direct to production
 # Breaks? Manual rollback
 ```
@@ -106,7 +106,7 @@ $ scia deploy "..." https://...
 **v2:**
 ```yaml
 # deployment.yaml in Git
-apiVersion: scia.io/v1alpha1
+apiVersion: scai.io/v1alpha1
 kind: Deployment
 metadata:
   name: flask-app
@@ -397,7 +397,7 @@ Your roadmap is excellent! Here are additional considerations:
 
 Keep v1 CLI, add features incrementally:
 
-1. **Month 1-2:** Add reconciliation (run `scia deploy` in loop)
+1. **Month 1-2:** Add reconciliation (run `scai deploy` in loop)
 2. **Month 3-4:** Add RAG (pgvector + embedding service)
 3. **Month 5-6:** Add API (REST API wrapping CLI)
 
@@ -431,9 +431,9 @@ Otherwise: **Option A (Incremental)** to ship value faster
 
 ## Final Recommendation
 
-### **Build SCIA v2 if ALL of these are true:**
+### **Build SCAI v2 if ALL of these are true:**
 
-1. ✅ You have a team (>=5 people) that will use SCIA
+1. ✅ You have a team (>=5 people) that will use SCAI
 2. ✅ Reconciliation/drift detection is valuable
 3. ✅ Learning from past deployments matters (RAG ROI)
 4. ✅ Team knows Kubernetes OR willing to learn
@@ -472,7 +472,7 @@ Otherwise: **Option A (Incremental)** to ship value faster
 
 Before committing to v2, answer these:
 
-1. **Team Size:** How many engineers will use SCIA? (If <5, v1 may suffice)
+1. **Team Size:** How many engineers will use SCAI? (If <5, v1 may suffice)
 2. **Deployment Frequency:** How often do we deploy? (If <10/month, v1 OK)
 3. **Kubernetes Expertise:** Does team know K8s? (If no, add 3-month learning to timeline)
 4. **Budget:** Can we spend $500-1000/month on control plane? (If no, consider single-node K3s)

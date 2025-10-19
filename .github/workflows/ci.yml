@@ -122,8 +122,8 @@ jobs:
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: scia-binary
-          path: ./scia
+          name: scai-binary
+          path: ./scai
           retention-days: 7
 
   # Status check for required validation

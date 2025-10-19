@@ -6,8 +6,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/Smana/scia/internal/rules"
-	"github.com/Smana/scia/internal/types"
+	"github.com/Smana/scai/internal/rules"
+	"github.com/Smana/scai/internal/types"
 )
 
 // Client provides high-level LLM operations with multi-provider support
