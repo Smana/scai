@@ -1,4 +1,4 @@
-# SCIA OpenTofu Modules
+# SCAI OpenTofu Modules
 
 This directory contains reusable OpenTofu/Terraform modules for deploying applications to AWS.
 

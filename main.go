@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/Smana/scia/cmd"
+	"github.com/Smana/scai/cmd"
 )
 
 // Version information injected by GoReleaser during build

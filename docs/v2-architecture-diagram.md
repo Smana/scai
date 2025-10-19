@@ -1,4 +1,4 @@
-# SCIA v2 Architecture Diagrams
+# SCAI v2 Architecture Diagrams
 
 ## High-Level System Overview
 
@@ -15,9 +15,9 @@ graph TB
         K8sAPI["☸️ Kubernetes API<br/>(Custom Resources)"]
     end
 
-    subgraph "SCIA Control Plane Cluster"
+    subgraph "SCAI Control Plane Cluster"
         subgraph "Operators & Controllers"
-            SCIAOp["🤖 SCIA Operator<br/>(Reconciliation Loop)"]
+            SCAIOp["🤖 SCAI Operator<br/>(Reconciliation Loop)"]
             XPlane["⚡ Crossplane<br/>(Cloud Resources)"]
         end
 
@@ -50,8 +50,8 @@ graph TB
     GitOps --> K8sAPI
     GraphQLAPI --> K8sAPI
 
-    K8sAPI --> SCIAOp
-    SCIAOp --> Analyzer
+    K8sAPI --> SCAIOp
+    SCAIOp --> Analyzer
     Analyzer --> LLM
     LLM --> RAGRetriever
     RAGRetriever --> PgVector
@@ -62,11 +62,11 @@ graph TB
     XPlane --> GCP
     XPlane --> Azure
 
-    SCIAOp --> Policy
-    SCIAOp --> Cost
-    SCIAOp --> Observability
+    SCAIOp --> Policy
+    SCAIOp --> Cost
+    SCAIOp --> Observability
 
-    style "SCIA Control Plane Cluster" fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
+    style "SCAI Control Plane Cluster" fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
     style "AI & Decision Engine" fill:#fff3e0,stroke:#f57c00,stroke-width:2px
     style "Data Layer" fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
 ```
@@ -77,7 +77,7 @@ graph TB
 sequenceDiagram
     participant User
     participant K8sAPI as Kubernetes API
-    participant Operator as SCIA Operator
+    participant Operator as SCAI Operator
     participant Analyzer as Repository Analyzer
     participant RAG as RAG Service
     participant LLM as LLM Engine
@@ -168,13 +168,13 @@ graph LR
 
 ```mermaid
 graph TB
-    subgraph "SCIA Operator Decision"
+    subgraph "SCAI Operator Decision"
         Decision["🧠 LLM Decision<br/>Strategy: VM<br/>Instance: t3.medium<br/>Framework: Flask"]
     end
 
     subgraph "Crossplane Layer"
-        InfraCR["📄 Infrastructure CR<br/>(Created by SCIA Operator)"]
-        Composition["⚙️ Composition<br/>scia-vm-deployment<br/>(KCL Function)"]
+        InfraCR["📄 Infrastructure CR<br/>(Created by SCAI Operator)"]
+        Composition["⚙️ Composition<br/>scai-vm-deployment<br/>(KCL Function)"]
     end
 
     subgraph "KCL Function Logic"
@@ -221,9 +221,9 @@ graph TB
 
 ```mermaid
 graph TB
-    subgraph "SCIA Control Plane Cluster"
-        subgraph "Namespace: scia-system"
-            Operator["🤖 SCIA Operator"]
+    subgraph "SCAI Control Plane Cluster"
+        subgraph "Namespace: scai-system"
+            Operator["🤖 SCAI Operator"]
             RAG["🧠 RAG Service"]
             GraphQL["🔌 GraphQL API"]
             PgVector[("🗄️ pgvector")]
@@ -267,7 +267,7 @@ graph TB
 
     RAG -.->|Learns from all teams| PgVector
 
-    style "Namespace: scia-system" fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
+    style "Namespace: scai-system" fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
     style "Namespace: team-backend" fill:#fff3e0,stroke:#f57c00,stroke-width:2px
     style "Namespace: team-frontend" fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     style "Namespace: team-data" fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
@@ -298,7 +298,7 @@ graph TB
     end
 
     subgraph "Step 4: Provisioning"
-        CreateCR["📄 Create Infrastructure CR<br/>compositionRef: scia-k8s"]
+        CreateCR["📄 Create Infrastructure CR<br/>compositionRef: scai-k8s"]
         Crossplane["⚡ Crossplane Reconcile<br/>Generate 15 AWS resources"]
         Provision["☁️ AWS API Calls<br/>Create VPC, EKS, Nodes"]
     end
@@ -403,8 +403,8 @@ graph TB
 ```mermaid
 graph LR
     subgraph "Phase 1: Coexistence"
-        V1["SCIA v1 (CLI)<br/>✓ Existing deployments<br/>✓ SQLite DB<br/>✓ Direct Terraform"]
-        V2Dev["SCIA v2 (Dev)<br/>⚡ New projects only<br/>⚡ Learning from v1"]
+        V1["SCAI v1 (CLI)<br/>✓ Existing deployments<br/>✓ SQLite DB<br/>✓ Direct Terraform"]
+        V2Dev["SCAI v2 (Dev)<br/>⚡ New projects only<br/>⚡ Learning from v1"]
     end
 
     subgraph "Phase 2: Migration"
@@ -413,11 +413,11 @@ graph LR
     end
 
     subgraph "Phase 3: v2 Primary"
-        V2Prod["SCIA v2 (Production)<br/>✓ All new deployments<br/>✓ 50% migrated<br/>v1: Read-only"]
+        V2Prod["SCAI v2 (Production)<br/>✓ All new deployments<br/>✓ 50% migrated<br/>v1: Read-only"]
     end
 
     subgraph "Phase 4: Complete"
-        V2Full["SCIA v2 (Complete)<br/>✓ 100% deployments<br/>✓ v1 deprecated"]
+        V2Full["SCAI v2 (Complete)<br/>✓ 100% deployments<br/>✓ v1 deprecated"]
     end
 
     V1 --> Import

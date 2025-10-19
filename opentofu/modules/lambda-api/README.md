@@ -44,7 +44,7 @@ module "lambda_app" {
   log_retention_days   = 7
 
   tags = {
-    Project = "SCIA"
+    Project = "SCAI"
   }
 }
 ```

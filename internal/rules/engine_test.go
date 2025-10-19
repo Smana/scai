@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/Smana/scia/internal/types"
+	"github.com/Smana/scai/internal/types"
 )
 
 func TestLoadRules(t *testing.T) {

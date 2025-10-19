@@ -1,6 +1,6 @@
 version: 2
 
-project_name: scia
+project_name: scai
 
 before:
   hooks:
@@ -8,8 +8,8 @@ before:
     - go generate ./...
 
 builds:
-  - id: scia
-    binary: scia
+  - id: scai
+    binary: scai
     main: .
     env:
       - CGO_ENABLED=0
@@ -31,9 +31,9 @@ builds:
     mod_timestamp: "{{ .CommitTimestamp }}"
 
 archives:
-  - id: scia
+  - id: scai
     builds:
-      - scia
+      - scai
     name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
     format: tar.gz
     format_overrides:
@@ -93,7 +93,7 @@ release:
 
     #### Using Go Install
     ```bash
-    go install github.com/Smana/scia@{{ .Tag }}
+    go install github.com/Smana/scai@{{ .Tag }}
     ```
 
     #### Verify Checksums

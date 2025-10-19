@@ -7,8 +7,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/Smana/scia/internal/deployer"
-	"github.com/Smana/scia/internal/llm"
+	"github.com/Smana/scai/internal/deployer"
+	"github.com/Smana/scai/internal/llm"
 )
 
 const (

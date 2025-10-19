@@ -24,7 +24,7 @@ func IsDockerAvailable() bool {
 	return err == nil
 }
 
-// IsOllamaContainerRunning checks if the SCIA Ollama container is running
+// IsOllamaContainerRunning checks if the SCAI Ollama container is running
 func IsOllamaContainerRunning() bool {
 	cmd := exec.Command("docker", "ps", "--filter", fmt.Sprintf("name=%s", OllamaContainerName), "--format", "{{.Names}}")
 	output, err := cmd.Output()

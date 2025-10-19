@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/Smana/scia/internal/types"
+	"github.com/Smana/scai/internal/types"
 )
 
 // Analyzer handles repository analysis

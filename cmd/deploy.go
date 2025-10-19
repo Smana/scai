@@ -9,11 +9,11 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/Smana/scia/internal/analyzer"
-	"github.com/Smana/scia/internal/deployer"
-	"github.com/Smana/scia/internal/llm"
-	"github.com/Smana/scia/internal/parser"
-	"github.com/Smana/scia/internal/ui"
+	"github.com/Smana/scai/internal/analyzer"
+	"github.com/Smana/scai/internal/deployer"
+	"github.com/Smana/scai/internal/llm"
+	"github.com/Smana/scai/internal/parser"
+	"github.com/Smana/scai/internal/ui"
 )
 
 const (
@@ -27,7 +27,7 @@ const (
 var deployCmd = &cobra.Command{
 	Use:   "deploy [prompt] [repository_url_or_zip]",
 	Short: "Deploy an application to AWS",
-	Long: `SCIA (Smart Cloud Infrastructure Automation) analyzes code repositories,
+	Long: `SCAI (Smart Cloud Infrastructure Automation) analyzes code repositories,
 determines optimal deployment strategies using AI, and automatically provisions
 infrastructure using Terraform.
 
@@ -122,7 +122,7 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 	}
 
 	if verbose {
-		fmt.Printf("🚀 SCIA Deployment Starting...\n")
+		fmt.Printf("🚀 SCAI Deployment Starting...\n")
 		fmt.Printf("   User Prompt: %s\n", userPrompt)
 		fmt.Printf("   Repository: %s\n", repoSource)
 		fmt.Printf("   Work Directory: %s\n", workDir)

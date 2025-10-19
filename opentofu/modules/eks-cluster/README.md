@@ -41,7 +41,7 @@ module "eks_app" {
   environment = "production"
 
   tags = {
-    Project = "SCIA"
+    Project = "SCAI"
   }
 }
 ```

@@ -24,10 +24,10 @@ The project currently uses `github.com/ollama/ollama v0.12.6` which has 8 known 
 **Impact Level:** Low to Medium
 
 **Rationale:**
-- **Client-Only Usage**: SCIA uses the Ollama **client library** to communicate with a local Ollama server. These vulnerabilities primarily affect the Ollama server, not the client.
-- **Local Deployment**: SCIA is designed to communicate with a locally-running, user-controlled Ollama instance, not exposed to untrusted networks.
-- **No Server Exposure**: SCIA does not run an Ollama server or expose Ollama endpoints to external networks.
-- **DoS Scope**: Most vulnerabilities are DoS-related, which would affect the local Ollama service the user controls, not the SCIA tool itself.
+- **Client-Only Usage**: SCAI uses the Ollama **client library** to communicate with a local Ollama server. These vulnerabilities primarily affect the Ollama server, not the client.
+- **Local Deployment**: SCAI is designed to communicate with a locally-running, user-controlled Ollama instance, not exposed to untrusted networks.
+- **No Server Exposure**: SCAI does not run an Ollama server or expose Ollama endpoints to external networks.
+- **DoS Scope**: Most vulnerabilities are DoS-related, which would affect the local Ollama service the user controls, not the SCAI tool itself.
 
 ### Mitigation Strategy
 
@@ -49,18 +49,18 @@ The project currently uses `github.com/ollama/ollama v0.12.6` which has 8 known 
 
 ### Reporting Security Issues
 
-If you discover a security vulnerability in SCIA itself (not the Ollama dependency), please report it by creating a private security advisory on GitHub:
+If you discover a security vulnerability in SCAI itself (not the Ollama dependency), please report it by creating a private security advisory on GitHub:
 
-https://github.com/Smana/scia/security/advisories/new
+https://github.com/Smana/scai/security/advisories/new
 
 **Do not create public issues for security vulnerabilities.**
 
 ## Security Best Practices
 
-When using SCIA:
+When using SCAI:
 
 1. **Local Ollama**: Run Ollama locally, not exposed to the internet
-2. **Latest Versions**: Keep both SCIA and Ollama updated
+2. **Latest Versions**: Keep both SCAI and Ollama updated
 3. **Restricted Access**: Use firewall rules to limit Ollama access
 4. **Trusted Repositories**: Only deploy code from trusted sources
 5. **AWS Credentials**: Use IAM roles with least-privilege permissions

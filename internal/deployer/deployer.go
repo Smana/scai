@@ -9,11 +9,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
 
-	"github.com/Smana/scia/internal/backend"
-	"github.com/Smana/scia/internal/llm"
-	"github.com/Smana/scia/internal/store"
-	"github.com/Smana/scia/internal/terraform"
-	"github.com/Smana/scia/internal/types"
+	"github.com/Smana/scai/internal/backend"
+	"github.com/Smana/scai/internal/llm"
+	"github.com/Smana/scai/internal/store"
+	"github.com/Smana/scai/internal/terraform"
+	"github.com/Smana/scai/internal/types"
 )
 
 // DeployConfig contains deployment configuration

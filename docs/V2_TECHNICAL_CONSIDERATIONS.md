@@ -1,4 +1,4 @@
-# SCIA v2: Technical Considerations & Pitfalls to Avoid
+# SCAI v2: Technical Considerations & Pitfalls to Avoid
 
 ## Critical Technical Recommendations
 
@@ -56,7 +56,7 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 - Automatic retries (with exponential backoff)
 - Prometheus metrics (out-of-box)
 
-**Tool:** `kubebuilder init --domain scia.io --repo github.com/smana/scia`
+**Tool:** `kubebuilder init --domain scai.io --repo github.com/smana/scai`
 
 #### B. Idempotency is Critical
 
@@ -75,12 +75,12 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 **GOOD:**
 ```go
 func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-    deployment := &sciaapi.Deployment{}
+    deployment := &scaiapi.Deployment{}
     r.Get(ctx, req.NamespacedName, deployment)
 
     // ✅ Check if infrastructure already exists
     if deployment.Status.InfrastructureRef != nil {
-        infra := &sciaapi.Infrastructure{}
+        infra := &scaiapi.Infrastructure{}
         r.Get(ctx, deployment.Status.InfrastructureRef, infra)
         if infra.Status.Phase == "Ready" {
             return ctrl.Result{}, nil  // Already reconciled
@@ -114,10 +114,10 @@ kubectl get infrastructure
 **Solution:** Add finalizer to ensure cleanup runs.
 
 ```go
-const deploymentFinalizer = "scia.io/finalizer"
+const deploymentFinalizer = "scai.io/finalizer"
 
 func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-    deployment := &sciaapi.Deployment{}
+    deployment := &scaiapi.Deployment{}
     if err := r.Get(ctx, req.NamespacedName, deployment); err != nil {
         return ctrl.Result{}, client.IgnoreNotFound(err)
     }
@@ -379,18 +379,18 @@ cat rendered.yaml
 **Solution:** Use `compositionUpdatePolicy: Manual`.
 
 ```yaml
-apiVersion: scia.io/v1alpha1
+apiVersion: scai.io/v1alpha1
 kind: Infrastructure
 spec:
   compositionRef:
-    name: scia-vm-deployment
+    name: scai-vm-deployment
   compositionUpdatePolicy: Manual  # Don't auto-update
 ```
 
 **Upgrade Process:**
-1. Create new composition version: `scia-vm-deployment-v2`
+1. Create new composition version: `scai-vm-deployment-v2`
 2. Test with new deployments
-3. Gradually migrate old deployments: `kubectl patch infrastructure X --type=merge -p '{"spec":{"compositionRef":{"name":"scia-vm-deployment-v2"}}}'`
+3. Gradually migrate old deployments: `kubectl patch infrastructure X --type=merge -p '{"spec":{"compositionRef":{"name":"scai-vm-deployment-v2"}}}'`
 
 **Why:** Prevents accidental breaking changes.
 
@@ -406,13 +406,13 @@ spec:
 ```go
 // ❌ N+1 queries
 func (r *queryResolver) Deployments(ctx context.Context) ([]*model.Deployment, error) {
-    deployments := []*sciaapi.Deployment{}
+    deployments := []*scaiapi.Deployment{}
     r.k8sClient.List(ctx, deployments)
 
     result := []*model.Deployment{}
     for _, deploy := range deployments {
         // Fetch infrastructure for each deployment (N queries)
-        infra := &sciaapi.Infrastructure{}
+        infra := &scaiapi.Infrastructure{}
         r.k8sClient.Get(ctx, deploy.Status.InfrastructureRef, infra)
         result = append(result, convertToGraphQL(deploy, infra))
     }
@@ -426,7 +426,7 @@ func (r *queryResolver) Deployments(ctx context.Context) ([]*model.Deployment, e
 import "github.com/graph-gophers/dataloader"
 
 func (r *queryResolver) Deployments(ctx context.Context) ([]*model.Deployment, error) {
-    deployments := []*sciaapi.Deployment{}
+    deployments := []*scaiapi.Deployment{}
     r.k8sClient.List(ctx, deployments)
 
     // Batch-load all infrastructures in one query
@@ -511,7 +511,7 @@ spec:
   hard:
     requests.cpu: "100"
     requests.memory: 200Gi
-    count/deployments.scia.io: "50"
+    count/deployments.scai.io: "50"
 
 ---
 # 2. NetworkPolicy (isolate traffic)
@@ -561,13 +561,13 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: scia-deployer
+  name: scai-deployer
   namespace: team-backend
 rules:
-  - apiGroups: ["scia.io"]
+  - apiGroups: ["scai.io"]
     resources: ["deployments"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  - apiGroups: ["scia.io"]
+  - apiGroups: ["scai.io"]
     resources: ["deployments/status"]
     verbs: ["get", "watch"]  # Read-only status
   - apiGroups: [""]
@@ -587,7 +587,7 @@ subjects:
     apiGroup: rbac.authorization.k8s.io
 roleRef:
   kind: Role
-  name: scia-deployer
+  name: scai-deployer
   apiGroup: rbac.authorization.k8s.io
 ```
 
@@ -614,7 +614,7 @@ kubectl --as=user@team-backend.com create -f deployment.yaml -n team-frontend
 
 ```go
 func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-    deployment := &sciaapi.Deployment{}
+    deployment := &scaiapi.Deployment{}
     r.Get(ctx, req.NamespacedName, deployment)
 
     // Estimate cost before creating infrastructure
@@ -673,13 +673,13 @@ func (c *CostEstimator) Estimate(decision Decision) (float64, error) {
 ```go
 // CronJob: Update actual costs daily
 func (r *CostSyncer) SyncCosts(ctx context.Context) error {
-    deployments := &sciaapi.DeploymentList{}
+    deployments := &scaiapi.DeploymentList{}
     r.Client.List(ctx, deployments)
 
     for _, deployment := range deployments.Items {
         // Query AWS Cost Explorer
         actualCost, err := r.AWS.GetCostByTags(map[string]string{
-            "scia-deployment-id": deployment.UID,
+            "scai-deployment-id": deployment.UID,
         })
         if err != nil {
             log.Error(err, "Failed to fetch cost")
@@ -711,7 +711,7 @@ var (
     // Counter: Total deployments
     deploymentsTotal = prometheus.NewCounterVec(
         prometheus.CounterOpts{
-            Name: "scia_deployments_total",
+            Name: "scai_deployments_total",
             Help: "Total deployments",
         },
         []string{"strategy", "framework", "outcome"},
@@ -720,7 +720,7 @@ var (
     // Histogram: Deployment duration
     deploymentDuration = prometheus.NewHistogramVec(
         prometheus.HistogramOpts{
-            Name: "scia_deployment_duration_seconds",
+            Name: "scai_deployment_duration_seconds",
             Help: "Deployment duration",
             Buckets: []float64{30, 60, 120, 300, 600, 1200},  // 30s to 20min
         },
@@ -730,7 +730,7 @@ var (
     // Gauge: Active deployments
     activeDeployments = prometheus.NewGaugeVec(
         prometheus.GaugeOpts{
-            Name: "scia_active_deployments",
+            Name: "scai_active_deployments",
             Help: "Number of active deployments",
         },
         []string{"namespace", "strategy"},
@@ -739,7 +739,7 @@ var (
     // Histogram: RAG retrieval latency
     ragRetrievalLatency = prometheus.NewHistogram(
         prometheus.HistogramOpts{
-            Name: "scia_rag_retrieval_seconds",
+            Name: "scai_rag_retrieval_seconds",
             Help: "RAG retrieval latency",
             Buckets: prometheus.DefBuckets,
         },
@@ -765,14 +765,14 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 **Grafana Queries:**
 ```promql
 # Success rate
-sum(rate(scia_deployments_total{outcome="success"}[5m])) /
-sum(rate(scia_deployments_total[5m]))
+sum(rate(scai_deployments_total{outcome="success"}[5m])) /
+sum(rate(scai_deployments_total[5m]))
 
 # P95 deployment duration
-histogram_quantile(0.95, rate(scia_deployment_duration_seconds_bucket[5m]))
+histogram_quantile(0.95, rate(scai_deployment_duration_seconds_bucket[5m]))
 
 # Active deployments by strategy
-sum by (strategy) (scia_active_deployments)
+sum by (strategy) (scai_active_deployments)
 ```
 
 ---
@@ -789,7 +789,7 @@ sum by (strategy) (scia_active_deployments)
 
 ```go
 func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-    deployment := &sciaapi.Deployment{}
+    deployment := &scaiapi.Deployment{}
     r.Get(ctx, req.NamespacedName, deployment)
 
     // Skip if already reconciled this generation
@@ -877,10 +877,10 @@ func TestDeploymentReconciler_Reconcile(t *testing.T) {
     }
 
     // Test: Create deployment, verify infrastructure created
-    deployment := &sciaapi.Deployment{
+    deployment := &scaiapi.Deployment{
         ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
-        Spec: sciaapi.DeploymentSpec{
-            Repository: sciaapi.Repository{URL: "https://github.com/test/app"},
+        Spec: scaiapi.DeploymentSpec{
+            Repository: scaiapi.Repository{URL: "https://github.com/test/app"},
         },
     }
     k8sClient.Create(context.Background(), deployment)
@@ -891,7 +891,7 @@ func TestDeploymentReconciler_Reconcile(t *testing.T) {
     assert.NoError(t, err)
 
     // Verify infrastructure created
-    infra := &sciaapi.Infrastructure{}
+    infra := &scaiapi.Infrastructure{}
     k8sClient.Get(context.Background(), types.NamespacedName{
         Name: "test-infra",
         Namespace: "default",
@@ -905,16 +905,16 @@ func TestDeploymentReconciler_Reconcile(t *testing.T) {
 ```go
 var _ = Describe("Deployment Controller", func() {
     It("Should create infrastructure when deployment is created", func() {
-        deployment := &sciaapi.Deployment{
+        deployment := &scaiapi.Deployment{
             ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
-            Spec: sciaapi.DeploymentSpec{
-                Repository: sciaapi.Repository{URL: "https://github.com/test/app"},
+            Spec: scaiapi.DeploymentSpec{
+                Repository: scaiapi.Repository{URL: "https://github.com/test/app"},
             },
         }
         Expect(k8sClient.Create(ctx, deployment)).To(Succeed())
 
         Eventually(func() bool {
-            infra := &sciaapi.Infrastructure{}
+            infra := &scaiapi.Infrastructure{}
             err := k8sClient.Get(ctx, types.NamespacedName{
                 Name: "test-infra",
                 Namespace: "default",
@@ -933,7 +933,7 @@ var _ = Describe("Deployment Controller", func() {
 
 # 1. Create test deployment
 kubectl apply -f - <<EOF
-apiVersion: scia.io/v1alpha1
+apiVersion: scai.io/v1alpha1
 kind: Deployment
 metadata:
   name: e2e-test-flask
@@ -985,7 +985,7 @@ kubectl delete deployment e2e-test-flask
 # 1. Deploy 10 Flask apps
 for i in {1..10}; do
   kubectl apply -f - <<EOF
-apiVersion: scia.io/v1alpha1
+apiVersion: scai.io/v1alpha1
 kind: Deployment
 metadata:
   name: bench-flask-$i

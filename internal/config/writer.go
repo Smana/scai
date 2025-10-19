@@ -8,14 +8,14 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// WriteConfig writes the configuration to ~/.scia.yaml
+// WriteConfig writes the configuration to ~/.scai.yaml
 func WriteConfig(cfg *Config) error {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return fmt.Errorf("failed to get home directory: %w", err)
 	}
 
-	configPath := filepath.Join(home, ".scia.yaml")
+	configPath := filepath.Join(home, ".scai.yaml")
 
 	// Marshal config to YAML
 	data, err := yaml.Marshal(cfg)
@@ -31,14 +31,14 @@ func WriteConfig(cfg *Config) error {
 	return nil
 }
 
-// ReadConfig reads the configuration from ~/.scia.yaml
+// ReadConfig reads the configuration from ~/.scai.yaml
 func ReadConfig() (*Config, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get home directory: %w", err)
 	}
 
-	configPath := filepath.Join(home, ".scia.yaml")
+	configPath := filepath.Join(home, ".scai.yaml")
 
 	// Check if file exists
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
@@ -46,7 +46,7 @@ func ReadConfig() (*Config, error) {
 	}
 
 	// Read file
-	// #nosec G304 -- configPath is from GetConfigPath() which returns user's ~/.scia.yaml
+	// #nosec G304 -- configPath is from GetConfigPath() which returns user's ~/.scai.yaml
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
@@ -68,7 +68,7 @@ func ConfigExists() bool {
 		return false
 	}
 
-	configPath := filepath.Join(home, ".scia.yaml")
+	configPath := filepath.Join(home, ".scai.yaml")
 	_, err = os.Stat(configPath)
 	return err == nil
 }

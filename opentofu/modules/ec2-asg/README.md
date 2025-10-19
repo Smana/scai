@@ -24,7 +24,7 @@ module "app_deployment" {
   user_data        = file("${path.module}/userdata.sh")
 
   tags = {
-    Project = "SCIA"
+    Project = "SCAI"
     Owner   = "Platform Team"
   }
 }

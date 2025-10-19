@@ -8,11 +8,11 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
 
-	"github.com/Smana/scia/internal/backend"
-	"github.com/Smana/scia/internal/cloud"
-	"github.com/Smana/scia/internal/config"
-	"github.com/Smana/scia/internal/llm"
-	"github.com/Smana/scia/internal/requirements"
+	"github.com/Smana/scai/internal/backend"
+	"github.com/Smana/scai/internal/cloud"
+	"github.com/Smana/scai/internal/config"
+	"github.com/Smana/scai/internal/llm"
+	"github.com/Smana/scai/internal/requirements"
 )
 
 const (
@@ -24,7 +24,7 @@ const (
 
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "Initialize SCIA configuration",
+	Short: "Initialize SCAI configuration",
 	Long: `Interactive wizard to help onboard new users by configuring:
 - LLM provider (Ollama, Gemini, or OpenAI)
 - Cloud provider (AWS or GCP)
@@ -32,7 +32,7 @@ var initCmd = &cobra.Command{
 - Terraform backend (S3 bucket)
 - Requirements check (OpenTofu, Docker, etc.)
 
-The configuration will be saved to ~/.scia.yaml`,
+The configuration will be saved to ~/.scai.yaml`,
 	RunE: runInit,
 }
 
@@ -43,8 +43,8 @@ func init() {
 func runInit(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	fmt.Println("🚀 SCIA Configuration Wizard")
-	fmt.Println("This wizard will help you set up SCIA for the first time.")
+	fmt.Println("🚀 SCAI Configuration Wizard")
+	fmt.Println("This wizard will help you set up SCAI for the first time.")
 	fmt.Println()
 
 	// Check if config already exists
@@ -191,7 +191,7 @@ func configureOllama(cfg *config.Config) error {
 		// Test connection
 		if !llm.IsOllamaAccessible(url) {
 			fmt.Printf("\n⚠️  Warning: Could not connect to Ollama at %s\n", url)
-			fmt.Println("   Make sure Ollama is running before using SCIA")
+			fmt.Println("   Make sure Ollama is running before using SCAI")
 		}
 	} else {
 		cfg.LLM.Ollama.URL = "http://localhost:11434"
@@ -606,7 +606,7 @@ func checkRequirements(cfg *config.Config) error {
 		for _, name := range missing {
 			fmt.Printf("  - %s\n", name)
 		}
-		fmt.Println("\nPlease install missing dependencies before using SCIA.")
+		fmt.Println("\nPlease install missing dependencies before using SCAI.")
 	}
 
 	return nil
@@ -643,7 +643,7 @@ func displaySummary(cfg *config.Config) {
 	fmt.Printf("    S3 Region: %s\n", cfg.Terraform.Backend.S3Region)
 
 	home, _ := os.UserHomeDir()
-	fmt.Printf("\n📁 Configuration saved to: %s/.scia.yaml\n", home)
+	fmt.Printf("\n📁 Configuration saved to: %s/.scai.yaml\n", home)
 
 	fmt.Println("\n🎉 Next Steps:")
 	fmt.Println("  1. Run 'scia deploy' to deploy your first application")

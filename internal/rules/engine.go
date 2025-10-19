@@ -5,7 +5,7 @@ import (
 	"os"
 	"slices"
 
-	"github.com/Smana/scia/internal/types"
+	"github.com/Smana/scai/internal/types"
 	"gopkg.in/yaml.v3"
 )
 

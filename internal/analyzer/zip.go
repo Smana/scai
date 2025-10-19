@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Smana/scia/internal/types"
+	"github.com/Smana/scai/internal/types"
 )
 
 // AnalyzeFromZip analyzes a zip file containing application code

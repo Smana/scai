@@ -1,6 +1,6 @@
 package config
 
-// Config represents the SCIA configuration structure
+// Config represents the SCAI configuration structure
 type Config struct {
 	LLM       LLMConfig       `yaml:"llm"`
 	Cloud     CloudConfig     `yaml:"cloud"`
