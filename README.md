@@ -1,16 +1,16 @@
-# SCIA: Smart Cloud Infrastructure Automation
+# SCAI: Smart Cloud Infrastructure Automation
 
 > **AI-powered deployment that turns natural language into cloud infrastructure**
 
 > ⚠️ **Experimental v1**: This is an initial experimentation and proof-of-concept. See [ROADMAP_V2.md](docs/V2_README.md) for production-ready v2 architecture and upcoming features.
 
-**SCIA** (from Latin *"scio"* - "I know" + IA) analyzes your code, determines the optimal deployment strategy using AI, and automatically provisions infrastructure on AWS.
+**SCAI** (from Latin *"scio"* - "I know" + IA) analyzes your code, determines the optimal deployment strategy using AI, and automatically provisions infrastructure on AWS.
 
 ```bash
-scia deploy "Deploy this Flask app on AWS" https://github.com/your-org/app
+scai deploy "Deploy this Flask app on AWS" https://github.com/your-org/app
 ```
 
-SCIA will:
+SCAI will:
 1. **Analyze** your application (framework, dependencies, ports)
 2. **Decide** the best deployment strategy using AI (VM, Kubernetes, or Serverless)
 3. **Deploy** by generating and applying Terraform configuration
@@ -22,35 +22,43 @@ SCIA will:
 
 You need:
 1. **OpenTofu or Terraform** - Infrastructure provisioning tool
-2. **Docker** - SCIA uses Docker to run Ollama LLM (automatic setup on first run)
+2. **Docker** - SCAI uses Docker to run Ollama LLM (automatic setup on first run)
 3. **AWS credentials** - Configured via `aws configure`
 
 ### Installation
 
-Download the latest binary from the [releases page](https://github.com/Smana/scia/releases):
+Download the latest release from the [releases page](https://github.com/Smana/scai/releases):
 
 ```bash
-# Download and install (replace VERSION with latest release)
-curl -L https://github.com/Smana/scia/releases/download/VERSION/scia-linux-amd64 -o scia
-chmod +x scia
-sudo mv scia /usr/local/bin/
+# Download and extract (replace VERSION with latest release, e.g., v0.5.1)
+VERSION=v0.5.1
+curl -L https://github.com/Smana/scai/releases/download/${VERSION}/scai-${VERSION}-linux-amd64.tar.gz -o scai.tar.gz
+tar -xzf scai.tar.gz
+chmod +x scai
+sudo mv scai /usr/local/bin/
+rm scai.tar.gz
+
+# Verify installation
+scai --version
 ```
+
+**Note**: The deployment rules are loaded from `configs/deployment_rules.yaml` if present, otherwise the system uses LLM-based decisions.
 
 Or build from source:
 
 ```bash
-git clone https://github.com/Smana/scia
-cd scia
+git clone https://github.com/Smana/scai
+cd scai
 task build  # requires Task runner: https://taskfile.dev
-sudo cp scia /usr/local/bin/
+sudo cp scai /usr/local/bin/
 ```
 
 ### Quick Start
 
-**1. Initialize SCIA** (one-time setup)
+**1. Initialize scai** (one-time setup)
 
 ```bash
-scia init
+scai init
 ```
 
 This will:
@@ -61,10 +69,10 @@ This will:
 **2. Deploy your first application**
 
 ```bash
-scia deploy "Deploy this Flask app" https://github.com/Arvo-AI/hello_world
+scai deploy "Deploy this Flask app" https://github.com/user/flask-app
 ```
 
-SCIA will automatically:
+scai will automatically:
 - Set up Ollama in Docker (if needed)
 - Download the AI model (~4GB on first run)
 - Analyze and deploy your application
@@ -73,27 +81,27 @@ SCIA will automatically:
 
 ```bash
 # List all deployments
-scia list
+scai list
 
 # Show detailed deployment info
-scia show <deployment-id>
+scai show <deployment-id>
 
 # View deployment outputs (URLs, IPs)
-scia outputs <deployment-id>
+scai outputs <deployment-id>
 
 # Check deployment status
-scia status <deployment-id>
+scai status <deployment-id>
 
 # Destroy a deployment
-scia destroy <deployment-id>
+scai destroy <deployment-id>
 ```
 
 ### Example Deployment Session
 ```bash
-$ scia deploy "Deploy this Flask app with 50GB disk and t3.medium instance" https://github.com/Arvo-AI/hello_world
+$ scai deploy "Deploy this Flask app with 50GB disk and t3.medium instance" https://github.com/user/flask-app
 
-Using config file: /home/user/.scia.yaml
-✓ Database initialized: /home/user/.scia/deployments.db
+Using config file: /home/user/.scai.yaml
+✓ Database initialized: /home/user/.scai/deployments.db
 🐳 Checking Docker Ollama...
 ✓ Ollama container is already running
 ✓ Model qwen2.5-coder:7b is already available
@@ -105,15 +113,15 @@ Using config file: /home/user/.scia.yaml
    Region: eu-west-3
    EC2 Instance: t3.medium
 
-🚀 SCIA Deployment Starting...
+🚀 scai Deployment Starting...
    User Prompt: Deploy this Flask app with 50GB disk and t3.medium instance
-   Repository: https://github.com/Arvo-AI/hello_world
-   Work Directory: /tmp/scia
+   Repository: https://github.com/user/flask-app
+   Work Directory: /tmp/scai
    AWS Region: eu-west-3
    Terraform Binary: tofu
 
 📊 Analyzing repository...
-Cloning repository: https://github.com/Arvo-AI/hello_world
+Cloning repository: https://github.com/user/flask-app
    Framework: flask
    Language: python
    Port: 5000
@@ -176,18 +184,18 @@ Cloning repository: https://github.com/Arvo-AI/hello_world
 
 ```bash
 # List all your deployments
-$ scia list
+$ scai list
 
                              Found 1 deployment(s)
 
 ID                                   | APP NAME    | STRATEGY | REGION    | STATUS      | CREATED
 b2c0091f-af3f-46a4-9b13-213f607b1e1b | hello_world | vm       | eu-west-3 | 🔄 running  | 2025-10-18 14:18
 
- INFO  Use 'scia show <deployment-id>' to see detailed information
+ INFO  Use 'scai show <deployment-id>' to see detailed information
 
 
 # Show detailed deployment information
-$ scia show b2c0091f-af3f-46a4-9b13-213f607b1e1b
+$ scai show b2c0091f-af3f-46a4-9b13-213f607b1e1b
 
                             DEPLOYMENT: hello_world
 
@@ -202,7 +210,7 @@ $ scia show b2c0091f-af3f-46a4-9b13-213f607b1e1b
 
 # 📦 Repository
 
-   URL:          https://github.com/Arvo-AI/hello_world
+   URL:          https://github.com/user/flask-app
    Commit:       21eaaab0957681f6527813b33f1c887e06c20bcf
 
 
@@ -214,7 +222,7 @@ $ scia show b2c0091f-af3f-46a4-9b13-213f607b1e1b
 # 🔧 Terraform
 
    State Key:    deployments/b2c0091f-af3f-46a4-9b13-213f607b1e1b/terraform.tfstate
-   Directory:    /tmp/scia/terraform
+   Directory:    /tmp/scai/terraform
 
 
 # ⚙️  Configuration
@@ -247,7 +255,7 @@ $ scia show b2c0091f-af3f-46a4-9b13-213f607b1e1b
 
 
 # View outputs only
-$ scia outputs b2c0091f-af3f-46a4-9b13-213f607b1e1b
+$ scai outputs b2c0091f-af3f-46a4-9b13-213f607b1e1b
 
                               Outputs: hello_world
 
@@ -257,7 +265,7 @@ $ scia outputs b2c0091f-af3f-46a4-9b13-213f607b1e1b
 
 
 # Destroy when done
-$ scia destroy --yes b2c0091f-af3f-46a4-9b13-213f607b1e1b
+$ scai destroy --yes b2c0091f-af3f-46a4-9b13-213f607b1e1b
 ═══════════════════════════════════════════════════════════════
   DESTROY DEPLOYMENT: hello_world
 ═══════════════════════════════════════════════════════════════
@@ -277,7 +285,7 @@ $ scia destroy --yes b2c0091f-af3f-46a4-9b13-213f607b1e1b
 
 ## 🧠 How It Works
 
-SCIA uses a **3-tier decision system**:
+scai uses a **3-tier decision system**:
 
 1. **Code Analysis**: Detects framework (Flask, Express, Go...), dependencies, and configuration
 2. **AI Decision**:
@@ -297,20 +305,20 @@ Repository → Analyzer → AI Decision Engine → Terraform → AWS Infrastruct
 
 ### Natural Language Configuration
 
-SCIA understands infrastructure specifications in your prompts using Ollama LLM:
+scai understands infrastructure specifications in your prompts using Ollama LLM:
 
 ```bash
 # Specify instance type and disk size
-scia deploy "Deploy this Flask app with 50GB disk and t3.medium instance" https://github.com/your-org/app
+scai deploy "Deploy this Flask app with 50GB disk and t3.medium instance" https://github.com/your-org/app
 
 # Specify instance type only
-scia deploy "Deploy on a t3.large instance" https://github.com/your-org/app
+scai deploy "Deploy on a t3.large instance" https://github.com/your-org/app
 
 # Specify region
-scia deploy "Deploy to us-west-2" https://github.com/your-org/app
+scai deploy "Deploy to us-west-2" https://github.com/your-org/app
 
 # Combine multiple parameters
-scia deploy "Deploy to eu-west-1 on a t3.medium with 3 EKS nodes" https://github.com/your-org/app
+scai deploy "Deploy to eu-west-1 on a t3.medium with 3 EKS nodes" https://github.com/your-org/app
 
 # The LLM extracts:
 # - ec2_instance_type: t3.medium, t3.large, etc.
@@ -323,40 +331,40 @@ scia deploy "Deploy to eu-west-1 on a t3.medium with 3 EKS nodes" https://github
 
 ```bash
 # Force a specific strategy
-./scia deploy --strategy kubernetes "Deploy this app" https://github.com/your-org/app
+./scai deploy --strategy kubernetes "Deploy this app" https://github.com/your-org/app
 
 # Auto-approve deployment (no confirmation)
-./scia deploy -y "Deploy this app" https://github.com/your-org/app
+./scai deploy -y "Deploy this app" https://github.com/your-org/app
 
 # Specify instance sizing
-./scia deploy --ec2-instance-type t3.large --ec2-volume-size 50 "Deploy app" https://...
+./scai deploy --ec2-instance-type t3.large --ec2-volume-size 50 "Deploy app" https://...
 
 # EKS cluster sizing
-./scia deploy --eks-node-type t3.medium --eks-desired-nodes 3 "Deploy app" https://...
+./scai deploy --eks-node-type t3.medium --eks-desired-nodes 3 "Deploy app" https://...
 
 # Verbose output for debugging
-./scia --verbose deploy "Deploy app" https://github.com/your-org/app
+./scai --verbose deploy "Deploy app" https://github.com/your-org/app
 ```
 
 ### Configuration
 
-**Using `scia init` (Recommended)**
+**Using `scai init` (Recommended)**
 
-The easiest way to configure SCIA:
+The easiest way to configure scai:
 
 ```bash
-scia init
+scai init
 ```
 
 This interactive command will:
 - Configure your LLM provider (Ollama, Gemini, or OpenAI)
 - Set up S3 backend for Terraform state (optional)
 - Validate your AWS credentials
-- Create `~/.scia.yaml` with your preferences
+- Create `~/.scai.yaml` with your preferences
 
 **Manual Configuration**
 
-You can also create `~/.scia.yaml` manually:
+You can also create `~/.scai.yaml` manually:
 
 ```yaml
 llm:
@@ -387,11 +395,11 @@ terraform:
 
 **Environment Variables**
 
-Override any config with environment variables (use `SCIA_` prefix):
+Override any config with environment variables (use `SCAI_` prefix):
 ```bash
-export SCIA_LLM_PROVIDER=ollama
-export SCIA_CLOUD_DEFAULT_REGION=eu-west-1
-export SCIA_VERBOSE=true
+export SCAI_LLM_PROVIDER=ollama
+export SCAI_CLOUD_DEFAULT_REGION=eu-west-1
+export SCAI_VERBOSE=true
 ```
 
 ## 🛠️ Development
@@ -437,10 +445,10 @@ See [CLAUDE.md](CLAUDE.md) for detailed architecture and contribution guidelines
 docker ps
 
 # Check logs
-docker logs scia-ollama
+docker logs scai-ollama
 
 # Restart container
-docker restart scia-ollama
+docker restart scai-ollama
 ```
 
 **Problem**: Model download is slow
@@ -462,7 +470,7 @@ aws configure
 **Problem**: EC2 instance not accessible
 ```bash
 # Check security group allows inbound traffic on the application port
-# SCIA creates security groups automatically but verify in AWS console
+# scai creates security groups automatically but verify in AWS console
 
 # SSH to instance to check logs (replace with your IP)
 ssh -i ~/.ssh/your-key.pem ec2-user@<instance-ip>
@@ -475,10 +483,10 @@ sudo tail -f /var/log/app.log        # Application logs
 **Problem**: Application not starting after deployment
 ```bash
 # Use verbose mode to see detailed logs
-./scia --verbose deploy "Deploy app" https://github.com/your-org/app
+./scai --verbose deploy "Deploy app" https://github.com/your-org/app
 
 # Check Terraform state
-cd /tmp/scia/terraform/<timestamp>
+cd /tmp/scai/terraform/<timestamp>
 tofu show
 
 # Check application logs on the deployed instance
@@ -486,13 +494,13 @@ tofu show
 
 **Problem**: Want to use local Ollama instead of Docker
 ```bash
-# Set in config file (~/.scia.yaml)
+# Set in config file (~/.scai.yaml)
 ollama:
   use_docker: false
   url: http://localhost:11434
 
 # Or via environment variable
-export SCIA_OLLAMA_USE_DOCKER=false
+export SCAI_OLLAMA_USE_DOCKER=false
 
 # Make sure local Ollama is running
 ollama serve
@@ -509,7 +517,7 @@ ollama pull qwen2.5-coder:7b
 - [x] Multi-provider LLM support (Ollama, Gemini, OpenAI)
 - [x] Deployment tracking with SQLite database
 - [x] Deployment management (list, show, destroy, outputs, status)
-- [x] Interactive configuration with `scia init`
+- [x] Interactive configuration with `scai init`
 - [x] Terraform state management with S3 backend
 
 **Coming Next:**
@@ -540,6 +548,6 @@ Built with:
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/Smana/scia/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/Smana/scia/discussions)
+- **Issues**: [GitHub Issues](https://github.com/Smana/scai/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/Smana/scai/discussions)
 - **Documentation**: See [CLAUDE.md](CLAUDE.md) for architecture details

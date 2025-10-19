@@ -111,7 +111,7 @@ tasks:
       - |
         ./{{.BINARY_NAME}} deploy \
           "Deploy this Flask app on AWS" \
-          https://github.com/Arvo-AI/hello_world
+          https://github.com/user/flask-app
 
   check:
     desc: Run all checks (test, lint, vulncheck)

@@ -77,10 +77,10 @@ task ci
 ### Running
 ```bash
 # Deploy from GitHub URL
-./scia deploy "Deploy this Flask app on AWS" https://github.com/Arvo-AI/hello_world
+./scai deploy "Deploy this Flask app on AWS" https://github.com/user/flask-app
 
 # Deploy from ZIP file
-./scia deploy "Deploy this application" /path/to/app.zip
+./scai deploy "Deploy this application" /path/to/app.zip
 
 # Example deployment (builds first)
 task run-example
