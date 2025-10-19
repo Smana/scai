@@ -69,7 +69,7 @@ This will:
 **2. Deploy your first application**
 
 ```bash
-scai deploy "Deploy this Flask app" https://github.com/Arvo-AI/hello_world
+scai deploy "Deploy this Flask app" https://github.com/user/flask-app
 ```
 
 scai will automatically:
@@ -98,7 +98,7 @@ scai destroy <deployment-id>
 
 ### Example Deployment Session
 ```bash
-$ scai deploy "Deploy this Flask app with 50GB disk and t3.medium instance" https://github.com/Arvo-AI/hello_world
+$ scai deploy "Deploy this Flask app with 50GB disk and t3.medium instance" https://github.com/user/flask-app
 
 Using config file: /home/user/.scai.yaml
 ✓ Database initialized: /home/user/.scai/deployments.db
@@ -115,13 +115,13 @@ Using config file: /home/user/.scai.yaml
 
 🚀 scai Deployment Starting...
    User Prompt: Deploy this Flask app with 50GB disk and t3.medium instance
-   Repository: https://github.com/Arvo-AI/hello_world
+   Repository: https://github.com/user/flask-app
    Work Directory: /tmp/scai
    AWS Region: eu-west-3
    Terraform Binary: tofu
 
 📊 Analyzing repository...
-Cloning repository: https://github.com/Arvo-AI/hello_world
+Cloning repository: https://github.com/user/flask-app
    Framework: flask
    Language: python
    Port: 5000
@@ -210,7 +210,7 @@ $ scai show b2c0091f-af3f-46a4-9b13-213f607b1e1b
 
 # 📦 Repository
 
-   URL:          https://github.com/Arvo-AI/hello_world
+   URL:          https://github.com/user/flask-app
    Commit:       21eaaab0957681f6527813b33f1c887e06c20bcf
 
 

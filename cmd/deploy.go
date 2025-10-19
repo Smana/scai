@@ -32,8 +32,8 @@ determines optimal deployment strategies using AI, and automatically provisions
 infrastructure using Terraform.
 
 Example:
-  scia deploy "Deploy this Flask app on AWS" https://github.com/Arvo-AI/hello_world
-  scia deploy "Deploy microservices" /path/to/app.zip`,
+  scai deploy "Deploy this Flask app on AWS" https://github.com/user/flask-app
+  scai deploy "Deploy microservices" /path/to/app.zip`,
 	Args: cobra.ExactArgs(2),
 	RunE: runDeploy,
 }

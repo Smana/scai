@@ -940,7 +940,7 @@ metadata:
   namespace: default
 spec:
   repository:
-    url: https://github.com/Arvo-AI/hello_world
+    url: https://github.com/user/flask-app
   prompt: "Deploy Flask app"
   cloudProvider: aws
   region: us-east-1
@@ -991,7 +991,7 @@ metadata:
   name: bench-flask-$i
 spec:
   repository:
-    url: https://github.com/Arvo-AI/hello_world
+    url: https://github.com/user/flask-app
   prompt: "Deploy Flask app"
 EOF
   START=$(date +%s)
