@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.3](https://github.com/Smana/scai/compare/v0.5.2...v0.5.3) (2025-10-19)
+
+
+### Bug Fixes
+
+* remove duplicate llm_provider migration ([bc35b5f](https://github.com/Smana/scai/commit/bc35b5f556b0223c12673b1fd91ea8c3a88d941d))
+
+
+### Code Refactoring
+
+* rename project from scia to scai ([f0169fa](https://github.com/Smana/scai/commit/f0169fa61726c62956416727124ea696dc4f20a4))
+* rename project from scia to scai ([5e3da22](https://github.com/Smana/scai/commit/5e3da22d80063c2b1f5fd879bdf573fe0d1a91dd)), closes [#13](https://github.com/Smana/scai/issues/13)
+
 ## [0.5.2](https://github.com/Smana/scai/compare/v0.5.1...v0.5.2) (2025-10-19)
 
 
