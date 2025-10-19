@@ -4,7 +4,7 @@
 
 > ⚠️ **Experimental v1**: This is an initial experimentation and proof-of-concept. See [ROADMAP_V2.md](docs/V2_README.md) for production-ready v2 architecture and upcoming features.
 
-**SCAI** (from Latin *"scio"* - "I know" + IA) analyzes your code, determines the optimal deployment strategy using AI, and automatically provisions infrastructure on AWS.
+**SCAI** (from Latin *"scio"* - "I know" + AI) analyzes your code, determines the optimal deployment strategy using AI, and automatically provisions infrastructure on AWS.
 
 ```bash
 scai deploy "Deploy this Flask app on AWS" https://github.com/your-org/app
